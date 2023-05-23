@@ -6,6 +6,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Hello world!
@@ -63,7 +65,48 @@ public class App {
 
     }
 
+    private static class Resource {
+        SocketChannel socketChannel;
+        Selector selector;
+
+        boolean close;
+
+        private Resource self() {
+            return this;
+        }
+
+        public SocketChannel getSocketChannel() {
+            return socketChannel;
+        }
+
+        public Resource socketChannel(SocketChannel socketChannel) {
+            this.socketChannel = socketChannel;
+            return self();
+        }
+
+        public Selector getSelector() {
+            return selector;
+        }
+
+        public Resource selector(Selector selector) {
+            this.selector = selector;
+            return self();
+        }
+
+        public boolean isClose() {
+            return close;
+        }
+
+        public Resource close(boolean close) {
+            this.close = close;
+            return self();
+        }
+    }
+
     private static Map<String, HttpURLConnection> map = new ConcurrentHashMap<String, HttpURLConnection>();
+    private static Map<String, Resource> channelMap = new ConcurrentHashMap<String, Resource>();
+    private static Map<String, LinkedBlockingQueue<ByteBuffer>> byteMap = new ConcurrentHashMap<String, LinkedBlockingQueue<ByteBuffer>>();
+    private static ByteBuffer end = ByteBuffer.wrap(new byte[]{-1});
 
     public static void main(String[] args) throws IOException {
         extracted();
@@ -78,7 +121,6 @@ public class App {
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
         ByteBuffer buffer = ByteBuffer.allocate(2048);
         ByteBuffer writeBuffer = ByteBuffer.allocate(2048);
-        ByteBuffer max = ByteBuffer.allocate(6000);
         while (true) {
             int n = selector.select();
             if (n == 0) {
@@ -187,7 +229,6 @@ public class App {
                                     System.out.println("IPV6访问");
                                     continue;
                                 }
-
                                 writeBuffer.put((byte) 5);
                                 writeBuffer.put((byte) 0);
                                 writeBuffer.put((byte) 0);
@@ -200,51 +241,131 @@ public class App {
                                 childChannel.write(writeBuffer);
                                 writeBuffer.clear();
                                 key.attach(attr.status(Help.Status.RECOVE).host(host).port(port));
+                                //建立异步连接
+                                connect(host, port, attr.getUuid());
                                 break;
                             case RECOVE:
                                 //获取服务端数据
-                                if (!childChannel.isOpen()){
+                                if (!childChannel.isOpen()) {
                                     System.out.println("channel 已经关闭");
                                     break;
                                 }
-                                int read = childChannel.read(max);
-
+                                Resource resource = channelMap.get(attr.getUuid());
+                                SocketChannel remoteClient = resource.getSocketChannel();
+                                int read = childChannel.read(buffer);
                                 if (read < 0) {
-                                    System.out.println("channel 关闭");
+                                    System.out.println("channel 读取结束正常关闭");
+                                    remoteClient.close();
+                                    resource.close(true);
+                                    resource.getSelector().wakeup(); //close调用会调用wakeup
                                     childChannel.close();
                                 } else {
-                                    final String host1 = attr.getHost();
-                                    final Integer port1 = attr.getPort();
-                                    final SocketChannel channel = childChannel;
-                                    final ByteBuffer buffer1 = buffer;
-                                    //Thread thread = new Thread(new Runnable() {
-                                    //    @Override
-                                    //    public void run() {
-                                            sendData(host1, port1, channel, max);
-                                        //}
-                                    //});
-                                   /* thread.start();
-                                    try {
-                                        Thread.sleep(500);
-                                    } catch (InterruptedException e) {
-                                        throw new RuntimeException(e);
+                                    do {
+                                        buffer.flip();
+                                        nPrint(buffer, "写入远程服务器数据为：");
+                                        remoteClient.write(buffer);
+                                        buffer.flip();
+                                    } while (childChannel.read(buffer) > 0);
+
+                                    LinkedBlockingQueue<ByteBuffer> linkedBlockingQueue = byteMap.get(attr.getUuid());
+                                    //获取数据
+                                    while (true) {
+                                        try {
+                                            ByteBuffer byteBuffer = linkedBlockingQueue.poll(3000, TimeUnit.SECONDS);
+                                            if ((byteBuffer.capacity() == 1 && byteBuffer.array()[0] == -1)) {
+                                                break;
+                                            } else if (Objects.isNull(byteBuffer)) {
+                                            } else {
+                                                nPrint(byteBuffer, "从远程接收数据刷入本地为：");
+                                                childChannel.write(byteBuffer);
+                                            }
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
                                     }
-                                    if (thread.isAlive()){
-                                        System.out.println("访问url严重超时 port："+port1+" host ：" +host1);
-                                        childChannel.close();
-                                        thread.interrupt();
-                                    }*/
                                 }
-                                //getLen(buffer, childChannel, attr);
                                 break;
                         }
                         buffer.clear();
                     }
                     iterator.remove();
                 }
-            }catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+
+    private static void connect(final String host, final Integer port, final String uuid) {
+        Selector selector = null;
+        try {
+            SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress(host, port));
+            socketChannel.configureBlocking(false);
+            while (!socketChannel.finishConnect()) {
+            }
+            selector = Selector.open();
+            socketChannel.register(selector, SelectionKey.OP_READ);
+            channelMap.put(uuid, new Resource().socketChannel(socketChannel).selector(selector).close(false));
+            LinkedBlockingQueue<ByteBuffer> linkedBlockingQueue = new LinkedBlockingQueue<ByteBuffer>();
+            byteMap.put(uuid, linkedBlockingQueue);
+        } catch (Exception exception) {
+        }
+        Selector finalSelector = selector;
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if (null == finalSelector) {
+                    return;
+                }
+                LinkedBlockingQueue<ByteBuffer> linkedBlockingQueue = byteMap.get(uuid);
+                try {
+                    while (true) {
+                        int n = finalSelector.select();
+                        if (n == 0) {
+                            if (channelMap.get(uuid).isClose()) {
+                                finalSelector.close();
+                                System.out.println("selector 正常退出");
+                                break;
+                            }
+                            continue;
+                        }
+                        if (n > 1) {
+                            System.out.println("监听过多");
+                        }
+                        Set<SelectionKey> selectionKeys = finalSelector.selectedKeys();
+                        Iterator<SelectionKey> iterator = selectionKeys.iterator();
+                        while (iterator.hasNext()) {
+                            SelectionKey selectionKey = iterator.next();
+                            SocketChannel channel = (SocketChannel) selectionKey.channel();
+                            if (selectionKey.isReadable()) {
+                                ByteBuffer allocate = ByteBuffer.allocate(4096);
+                                while (channel.read(allocate) > 0) {
+                                    allocate.flip();
+                                    nPrint(allocate, "从远程接收数据为：");
+                                    linkedBlockingQueue.add(allocate);
+                                    allocate = ByteBuffer.allocate(4096);
+                                }
+                                //这里不能直接通知远端刷，因为异步通知远端后，读事件执行结束。后面select时，因为channel数据还没被读取，会导致再次select出来。
+                                linkedBlockingQueue.add(end);
+                            }
+                            iterator.remove();
+                        }
+                    }
+                } catch (Exception exception) {
+                    exception.printStackTrace();
+                }
+            }
+        });
+        thread.start();
+    }
+
+    private static void nPrint(ByteBuffer allocate, String fix) {
+        byte[] array = allocate.array();
+        if (allocate.remaining() > 0) {
+            byte[] bytes = Arrays.copyOfRange(array, allocate.position(), allocate.remaining());
+            String s = byteToAscii(bytes);
+            System.out.println(fix + " " + s);
         }
     }
 
@@ -276,13 +397,11 @@ public class App {
                     SelectionKey selectionKey = iterator.next();
                     SocketChannel channel = (SocketChannel) selectionKey.channel();
                     if (selectionKey.isWritable()) {
-                        /*do {
+                        do {
                             buffer.flip();
                             channel.write(buffer);
                             buffer.flip();
-                        } while (childChannel.read(buffer) > 0);*/
-                        buffer.flip();
-                        channel.write(buffer);
+                        } while (childChannel.read(buffer) > 0);
                         buffer.clear();
                         selectionKey.interestOps(selectionKey.interestOps() & ~SelectionKey.OP_WRITE | SelectionKey.OP_READ);
                     }
@@ -342,6 +461,12 @@ public class App {
     }
 
     public static String byteToAscii(byte[] host) {
+/*        try {
+            byte[] gbks = new String(host, "GBK").getBytes("UTF-8");
+            String s = new String(gbks, "UTF-8");
+            System.out.println(s);
+        }   catch (Exception exception){
+        }*/
         StringBuilder output = new StringBuilder("");
         for (int i = 0; i < host.length; i++) {
             output.append((char) host[i]);
