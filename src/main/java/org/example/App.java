@@ -1,9 +1,14 @@
 package org.example;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -11,9 +16,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * Hello world!
  */
 public class App {
+    public static enum Status {
+        AUTH, CONNECTION, BIND, UDP, RECOVE;
+    }
+
     private static class Attr {
         private static Attr attr = new Attr();
-        Help.Status status;
+        Status status;
         String uuid;
         String host;
         Integer port;
@@ -22,11 +31,11 @@ public class App {
             return this;
         }
 
-        public Help.Status getStatus() {
+        public Status getStatus() {
             return status;
         }
 
-        public Attr status(Help.Status status) {
+        public Attr status(Status status) {
             this.status = status;
             return self();
         }
@@ -115,7 +124,36 @@ public class App {
     private static Map<String, HttpURLConnection> map = new ConcurrentHashMap<String, HttpURLConnection>();
     private static Map<String, Resource> channelMap = new ConcurrentHashMap<String, Resource>();
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
+        System.setProperty("https.protocols", "TLSv1.3");
+        System.setProperty("jdk.tls.client.protocols", "TLSv1.3");
+        try {
+            System.out.println(Arrays.toString(SSLContext.getDefault().getSupportedSSLParameters().getProtocols()));
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+
+        SSLContext context = SSLContext.getInstance("TLS");
+        context.init(null, null, new SecureRandom());
+
+        SSLSocketFactory factory = context.getSocketFactory();
+        SSLSocket socket = (SSLSocket) factory.createSocket();
+
+        String[] protocols = socket.getSupportedProtocols();
+
+        System.out.println("Supported Protocols: " + protocols.length);
+        for (String protocol : protocols) {
+            System.out.println(" " + protocol);
+        }
+
+        protocols = socket.getEnabledProtocols();
+
+        System.out.println("Enabled Protocols: " + protocols.length);
+        for (String protocol : protocols) {
+            System.out.println(" " + protocol);
+        }
+
+
         extracted();
     }
 
@@ -125,8 +163,8 @@ public class App {
         serverSocketChannel.configureBlocking(false);
         Selector selector = Selector.open();
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
-        ByteBuffer buffer = ByteBuffer.allocate(2048 * 10);
-        ByteBuffer writeBuffer = ByteBuffer.allocate(2048);
+        ByteBuffer buffer = ByteBuffer.allocate(4096 * 5);
+        ByteBuffer writeBuffer = ByteBuffer.allocate(4096 * 5);
         while (true) {
             int n = selector.select();
             if (n == 0) {
@@ -150,13 +188,13 @@ public class App {
                         childChannel.configureBlocking(false);
                         SelectionKey register = childChannel.register(selector, 0);
                         String uuid = UUID.randomUUID().toString().replaceAll("-", "");
-                        register.attach(new Attr().status(Help.Status.AUTH).uuid(uuid));
+                        register.attach(new Attr().status(Status.AUTH).uuid(uuid));
                         register.interestOps(register.interestOps() & ~SelectionKey.OP_ACCEPT | SelectionKey.OP_READ);
                     } else if (key.isReadable()) {
                         SocketChannel childChannel = (SocketChannel) key.channel();
                         Attr attr = (Attr) key.attachment();
                         String uuid = attr.getUuid();
-                        Help.Status status = attr.getStatus();
+                        Status status = attr.getStatus();
                         String VER;
                         String[] msg = null;
                         // TODO: 2023/5/23  处理粘包问题 
@@ -188,7 +226,7 @@ public class App {
                                 }
                                 String NMETHODS = msg[1];
                                 //2~255
-                                key.attach(attr.status(Help.Status.CONNECTION));
+                                key.attach(attr.status(Status.CONNECTION));
                                 writeBuffer.put((byte) 5);
                                 writeBuffer.put((byte) 0);
                                 writeBuffer.flip();
@@ -260,7 +298,7 @@ public class App {
                                 writeBuffer.flip();
                                 childChannel.write(writeBuffer);
                                 writeBuffer.clear();
-                                key.attach(attr.status(Help.Status.RECOVE).host(host).port(port));
+                                key.attach(attr.status(Status.RECOVE).host(host).port(port));
                                 //建立异步连接
                                 connect(host, port, attr.getUuid(), childChannel, key);
                                 break;
@@ -384,7 +422,7 @@ public class App {
                         SocketChannel channel = (SocketChannel) selectionKey.channel();
                         if (selectionKey.isReadable()) {
                             try {
-                                ByteBuffer allocate = ByteBuffer.allocate(4096 * 10);
+                                ByteBuffer allocate = ByteBuffer.allocate(4096 * 5);
                                 int read = channel.read(allocate);
                                 do {
                                     allocate.flip();
