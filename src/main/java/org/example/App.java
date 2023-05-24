@@ -1,14 +1,9 @@
 package org.example;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
 import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -16,148 +11,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * Hello world!
  */
 public class App {
-    public static enum Status {
-        AUTH, CONNECTION, BIND, UDP, RECOVE;
-    }
-
-    private static class Attr {
-        private static Attr attr = new Attr();
-        Status status;
-        String uuid;
-        String host;
-        Integer port;
-
-        private Attr self() {
-            return this;
-        }
-
-        public Status getStatus() {
-            return status;
-        }
-
-        public Attr status(Status status) {
-            this.status = status;
-            return self();
-        }
-
-
-        public Attr uuid(String uuid) {
-            this.uuid = uuid;
-            return self();
-        }
-
-        public String getUuid() {
-            return uuid;
-        }
-
-        public Attr host(String host) {
-            this.host = host;
-            return self();
-        }
-
-
-        public Attr port(Integer port) {
-            this.port = port;
-            return self();
-        }
-
-
-        public Integer getPort() {
-            return port;
-        }
-
-        public String getHost() {
-            return host;
-        }
-
-    }
-
-    private static class Resource {
-        SocketChannel remoteClient;
-        Selector selector;
-
-        //
-        SocketChannel childChannel;
-        SelectionKey childSKey;
-
-        private Resource self() {
-            return this;
-        }
-
-        public SocketChannel getRemoteClient() {
-            return remoteClient;
-        }
-
-        public Resource remoteClient(SocketChannel remoteClient) {
-            this.remoteClient = remoteClient;
-            return self();
-        }
-
-        public SocketChannel getChildChannel() {
-            return childChannel;
-        }
-
-        public Resource childChannel(SocketChannel childChannel) {
-            this.childChannel = childChannel;
-            return self();
-        }
-
-        public Selector getSelector() {
-            return selector;
-        }
-
-        public Resource selector(Selector selector) {
-            this.selector = selector;
-            return self();
-        }
-
-        public SelectionKey childSKey() {
-            return childSKey;
-        }
-
-        public Resource childSKey(SelectionKey childSKey) {
-            this.childSKey = childSKey;
-            return self();
-        }
-    }
-
-    private static Map<String, HttpURLConnection> map = new ConcurrentHashMap<String, HttpURLConnection>();
     private static Map<String, Resource> channelMap = new ConcurrentHashMap<String, Resource>();
 
     public static void main(String[] args) throws Exception {
-        System.setProperty("https.protocols", "TLSv1.3");
-        System.setProperty("jdk.tls.client.protocols", "TLSv1.3");
-        try {
-            System.out.println(Arrays.toString(SSLContext.getDefault().getSupportedSSLParameters().getProtocols()));
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
-
-        SSLContext context = SSLContext.getInstance("TLS");
-        context.init(null, null, new SecureRandom());
-
-        SSLSocketFactory factory = context.getSocketFactory();
-        SSLSocket socket = (SSLSocket) factory.createSocket();
-
-        String[] protocols = socket.getSupportedProtocols();
-
-        System.out.println("Supported Protocols: " + protocols.length);
-        for (String protocol : protocols) {
-            System.out.println(" " + protocol);
-        }
-
-        protocols = socket.getEnabledProtocols();
-
-        System.out.println("Enabled Protocols: " + protocols.length);
-        for (String protocol : protocols) {
-            System.out.println(" " + protocol);
-        }
-
-
-        extracted();
+        new App().vpnStart();
     }
 
-    private static void extracted() throws IOException {
+    private void vpnStart() throws IOException {
         ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.socket().bind(new InetSocketAddress(1080));
         serverSocketChannel.configureBlocking(false);
@@ -202,11 +62,11 @@ public class App {
                             case AUTH:
                                 while (childChannel.read(buffer) > 0) {
                                     buffer.flip();
-                                    msg = bytes2hexFirst(buffer);
+                                    msg = Utils.bytes2hexFirst(buffer);
                                 }
                                 if (null == msg || msg.length <= 0) {
                                     System.out.println(uuid + " AUTH 数据包不够，关闭channel");
-                                    msg = bytes2hexFirst(buffer);
+                                    msg = Utils.bytes2hexFirst(buffer);
                                     key.cancel();
                                     childChannel.close();
                                 }
@@ -237,7 +97,7 @@ public class App {
                             case CONNECTION:
                                 while (childChannel.read(buffer) > 0) {
                                     buffer.flip();
-                                    msg = bytes2hexFirst(buffer);
+                                    msg = Utils.bytes2hexFirst(buffer);
                                 }
                                 if (null == msg || msg.length <= 0) {
                                     System.out.println(uuid + " CONNECTION 数据包不够，关闭channel");
@@ -271,7 +131,7 @@ public class App {
                                 } else if ("03".equals(ATYP)) {//域名
                                     int hostnameSize = Integer.parseInt(msg[4], 16);
                                     String[] hostArr = Arrays.copyOfRange(msg, 4 + 1, hostnameSize + 4 + 1);
-                                    host = hexToAscii(hostArr);
+                                    host = Utils.hexToAscii(hostArr);
                                     //按照大端
                                     String[] portArr = Arrays.copyOfRange(msg, hostnameSize + 4 + 1, hostnameSize + 4 + 1 + 2);
                                     port = Integer.parseInt(portArr[0] + portArr[1], 16);
@@ -298,14 +158,14 @@ public class App {
                                 writeBuffer.flip();
                                 childChannel.write(writeBuffer);
                                 writeBuffer.clear();
-                                key.attach(attr.status(Status.RECOVE).host(host).port(port));
+                                key.attach(attr.status(Status.RECOVE));
                                 //建立异步连接
                                 connect(host, port, attr.getUuid(), childChannel, key);
                                 break;
                             case RECOVE:
                                 Resource resource = channelMap.get(uuid);
                                 if (Objects.isNull(resource)) {
-                                    // TODO: 2023/5/24 走到这里说明连接远端地址失败，因为他会关闭流，所以跳过即可。
+                                    // 走到这里说明连接远端地址失败，因为他会关闭流，所以跳过即可。
                                     System.out.println(uuid + " exception child  close");
                                     continue;
                                 }
@@ -455,64 +315,4 @@ public class App {
         });
         thread.start();
     }
-
-
-    public static String[] bytes2hexFirst(ByteBuffer buffer) {
-        String[] bytes = new String[buffer.remaining()];
-        final String HEX = "0123456789abcdef";
-        for (int i = 0; buffer.hasRemaining(); i++) {
-            StringBuilder sb = new StringBuilder(2);
-            byte b = buffer.get();
-            // 取出这个字节的高4位，然后与0x0f与运算，得到一个0-15之间的数据，通过HEX.charAt(0-15)即为16进制数
-            sb.append(HEX.charAt((b >> 4) & 0x0f));
-            // 取出这个字节的低位，与0x0f与运算，得到一个0-15之间的数据，通过HEX.charAt(0-15)即为16进制数
-            sb.append(HEX.charAt(b & 0x0f));
-            bytes[i] = sb.toString();
-        }
-        return bytes;
-    }
-
-    public static String hexToAscii(String[] host) {
-        StringBuilder output = new StringBuilder("");
-        for (int i = 0; i < host.length; i++) {
-            String str = host[i];
-            output.append((char) Integer.parseInt(str, 16));
-        }
-        return output.toString();
-    }
-
-    public static String byteToAscii(byte[] host) {
-        StringBuilder output = new StringBuilder("");
-        for (int i = 0; i < host.length; i++) {
-            output.append((char) host[i]);
-        }
-        return output.toString();
-    }
-
-    private static void nPrint(ByteBuffer allocate, String fix) {
-        if (allocate.remaining() > 0) {
-            byte[] bytes = Arrays.copyOfRange(allocate.array(), allocate.position(), allocate.remaining());
-            String s = byteToAscii(bytes);
-            System.out.println(fix + " " + s);
-        }
-    }
-
-    private static void nPrintByte(ByteBuffer allocate, String fix) {
-        if (allocate.remaining() > 0) {
-            int size = allocate.remaining();
-            String[] str = new String[size];
-            byte[] bytes = Arrays.copyOfRange(allocate.array(), allocate.position(), size);
-            final String HEX = "0123456789abcdef";
-            for (int i = 0; i < bytes.length; i++) {
-                StringBuilder sb = new StringBuilder(2);
-                // 取出这个字节的高4位，然后与0x0f与运算，得到一个0-15之间的数据，通过HEX.charAt(0-15)即为16进制数
-                sb.append(HEX.charAt((bytes[i] >> 4) & 0x0f));
-                // 取出这个字节的低位，与0x0f与运算，得到一个0-15之间的数据，通过HEX.charAt(0-15)即为16进制数
-                sb.append(HEX.charAt(bytes[i] & 0x0f));
-                str[i] = sb.toString();
-            }
-            System.out.println(fix + " " + Arrays.toString(str));
-        }
-    }
-
 }
