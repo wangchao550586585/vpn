@@ -55,36 +55,27 @@ public class App {
                         Attr attr = (Attr) key.attachment();
                         String uuid = attr.getUuid();
                         Status status = attr.getStatus();
-                        String VER;
                         String[] msg = null;
-                        // TODO: 2023/5/23  处理粘包问题 
+                        // TODO: 2023/5/23  处理粘包问题
+                        int len;
+                        byte VER;
                         switch (status) {
                             case AUTH:
-                                while (childChannel.read(buffer) > 0) {
-                                    buffer.flip();
-                                    msg = Utils.bytes2hexFirst(buffer);
-                                }
-                                if (null == msg || msg.length <= 0) {
-                                    System.out.println(uuid + " AUTH 数据包不够，关闭channel");
-                                    msg = Utils.bytes2hexFirst(buffer);
+                                len = childChannel.read(buffer);
+                                if (len == -1) {
                                     key.cancel();
                                     childChannel.close();
+                                    continue;
                                 }
-                                try {
-                                    VER = msg[0];
-                                } catch (Exception e) {
-                                    break;
-                                }
-
-                                if (!"05".equals(VER) || Integer.parseInt(VER) < 5) {
+                                buffer.flip();
+                                VER = buffer.get();
+                                if (0x05 > VER) {
                                     System.out.println(uuid + " 版本号错误或版本过低，只能支持5");
-                                }
-                                if (msg.length < 3) {
-                                    System.out.println(uuid + " 数据包不符合规定");
                                     key.cancel();
                                     childChannel.close();
+                                    continue;
                                 }
-                                String NMETHODS = msg[1];
+                                byte NMETHODS = buffer.get();
                                 //2~255
                                 key.attach(attr.status(Status.CONNECTION));
                                 writeBuffer.put((byte) 5);
@@ -95,48 +86,52 @@ public class App {
                                 System.out.println(uuid + " 鉴权成功");
                                 break;
                             case CONNECTION:
-                                while (childChannel.read(buffer) > 0) {
-                                    buffer.flip();
-                                    msg = Utils.bytes2hexFirst(buffer);
+                                len = 0;
+                                try {
+                                    len = childChannel.read(buffer);
+                                } catch (Exception e) {
+                                    System.out.println(uuid);
+                                    e.printStackTrace();
                                 }
-                                if (null == msg || msg.length <= 0) {
-                                    System.out.println(uuid + " CONNECTION 数据包不够，关闭channel");
+                                if (len == -1) {
                                     key.cancel();
                                     childChannel.close();
+                                    continue;
                                 }
-                                try {
-                                    VER = msg[0];
-                                } catch (Exception e) {
-                                    break;
-                                }
-                                if (!"05".equals(VER) || Integer.parseInt(VER) < 5) {
+                                buffer.flip();
+                                VER = buffer.get();
+                                if (0x05 > VER) {
                                     System.out.println(uuid + " 版本号错误或版本过低，只能支持5");
+                                    key.cancel();
+                                    childChannel.close();
+                                    continue;
                                 }
-                                String CMD = msg[1];
-                                if (!"01".equals(CMD)) {
+                                byte CMD = buffer.get();
+                                if (0x01 != CMD) {
                                     System.out.println(uuid + " 协议格式不对");
+                                    key.cancel();
+                                    childChannel.close();
+                                    continue;
                                 }
-                                String RSV = msg[2];
-                                String ATYP = msg[3];
+                                byte RSV = buffer.get();
+                                byte ATYP = buffer.get();
                                 String host = null;
                                 Integer port = 0;
-                                if ("01".equals(ATYP)) {//IPV4
-                                    int h1 = Integer.parseInt(msg[4], 16);
-                                    int h2 = Integer.parseInt(msg[5], 16);
-                                    int h3 = Integer.parseInt(msg[6], 16);
-                                    int h4 = Integer.parseInt(msg[7], 16);
-                                    host = h1 + "." + h2 + "." + h3 + "." + h4;
-                                    port = Integer.parseInt(msg[8] + msg[9], 16);
+                                if (0x01 == ATYP) {//IPV4
+                                    host = Utils.byteToInt(buffer.get()) + "." + Utils.byteToInt(buffer.get()) + "." + Utils.byteToInt(buffer.get()) + "." + Utils.byteToInt(buffer.get());
+                                    port = Utils.byteToInt(buffer.get()) * 256 + Utils.byteToInt(buffer.get());
                                     System.out.println(uuid + " IPV4 host: " + host + " port:" + port + " remoteAddress" + childChannel.getRemoteAddress());
-                                } else if ("03".equals(ATYP)) {//域名
-                                    int hostnameSize = Integer.parseInt(msg[4], 16);
-                                    String[] hostArr = Arrays.copyOfRange(msg, 4 + 1, hostnameSize + 4 + 1);
-                                    host = Utils.hexToAscii(hostArr);
+                                } else if (0x03 == ATYP) {//域名
+                                    byte hostnameSize = buffer.get();
+                                    byte[] b = new byte[hostnameSize];
+                                    for (int i = 0; i < hostnameSize; i++) {
+                                        b[i] = buffer.get();
+                                    }
+                                    host = Utils.byteToAscii(b);
+                                    port = Utils.byteToInt(buffer.get()) * 256 + Utils.byteToInt(buffer.get());
                                     //按照大端
-                                    String[] portArr = Arrays.copyOfRange(msg, hostnameSize + 4 + 1, hostnameSize + 4 + 1 + 2);
-                                    port = Integer.parseInt(portArr[0] + portArr[1], 16);
                                     System.out.println(uuid + " 域名访问 host: " + host + " port:" + port + " remoteAddress" + childChannel.getRemoteAddress());
-                                } else if ("04".equals(ATYP)) {//IPV6
+                                } else if (0x04 == ATYP) {//IPV6
                                     System.out.println("不支持IPV6访问");
                                     key.cancel();
                                     childChannel.close();
@@ -150,7 +145,7 @@ public class App {
                                 writeBuffer.put((byte) 5);
                                 writeBuffer.put((byte) 0);
                                 writeBuffer.put((byte) 0);
-                                writeBuffer.put((byte) Integer.parseInt(ATYP, 16));
+                                writeBuffer.put(ATYP);
                                 //put host
                                 writeBuffer.put(new byte[]{0, 0, 0, 0});
                                 //put port
@@ -213,6 +208,7 @@ public class App {
             }
         }
     }
+
 
     private static void connect(final String host, final Integer port, final String uuid, SocketChannel childChannel, SelectionKey key) {
         Selector selector = null;

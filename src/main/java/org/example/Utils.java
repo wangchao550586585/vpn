@@ -58,4 +58,16 @@ public class Utils {
             System.out.println(fix + " " + Arrays.toString(str));
         }
     }
+
+    public static int byteToInt(byte b) {
+        return Integer.parseInt(byteToHex(b), 16);
+    }
+
+    public static String byteToHex(byte b) {
+        String hex = Integer.toHexString(b & 0xFF);
+        if (hex.length() < 2) {
+            hex = "0" + hex;
+        }
+        return hex;
+    }
 }
