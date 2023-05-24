@@ -66,7 +66,8 @@ public class App {
     }
 
     private static class Resource {
-        SocketChannel socketChannel;
+        SocketChannel remoteClient;
+        SocketChannel childChannel;
         Selector selector;
 
         boolean close;
@@ -75,12 +76,21 @@ public class App {
             return this;
         }
 
-        public SocketChannel getSocketChannel() {
-            return socketChannel;
+        public SocketChannel getRemoteClient() {
+            return remoteClient;
         }
 
-        public Resource socketChannel(SocketChannel socketChannel) {
-            this.socketChannel = socketChannel;
+        public Resource remoteClient(SocketChannel remoteClient) {
+            this.remoteClient = remoteClient;
+            return self();
+        }
+
+        public SocketChannel getChildChannel() {
+            return childChannel;
+        }
+
+        public Resource childChannel(SocketChannel childChannel) {
+            this.childChannel = childChannel;
             return self();
         }
 
@@ -119,7 +129,7 @@ public class App {
         serverSocketChannel.configureBlocking(false);
         Selector selector = Selector.open();
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
-        ByteBuffer buffer = ByteBuffer.allocate(2048);
+        ByteBuffer buffer = ByteBuffer.allocate(2048 * 10);
         ByteBuffer writeBuffer = ByteBuffer.allocate(2048);
         while (true) {
             int n = selector.select();
@@ -242,7 +252,7 @@ public class App {
                                 writeBuffer.clear();
                                 key.attach(attr.status(Help.Status.RECOVE).host(host).port(port));
                                 //建立异步连接
-                                connect(host, port, attr.getUuid());
+                                connect(host, port, attr.getUuid(), childChannel);
                                 break;
                             case RECOVE:
                                 //获取服务端数据
@@ -251,38 +261,40 @@ public class App {
                                     break;
                                 }
                                 Resource resource = channelMap.get(attr.getUuid());
-                                SocketChannel remoteClient = resource.getSocketChannel();
+                                SocketChannel remoteClient = resource.getRemoteClient();
                                 int read = childChannel.read(buffer);
                                 if (read < 0) {
                                     System.out.println("channel 读取结束正常关闭");
                                     remoteClient.close();
-                                    resource.close(true);
-                                    resource.getSelector().wakeup(); //close调用会调用wakeup
+                                    //resource.getSelector().wakeup();
+                                    resource.getSelector().close(); //close调用会调用wakeup
                                     childChannel.close();
                                 } else {
+                                    String s = UUID.randomUUID().toString();
                                     do {
                                         buffer.flip();
-                                        nPrint(buffer, "写入远程服务器数据为：");
+                                        nPrint(buffer, s + ": 写入远程服务器数据为：");
                                         remoteClient.write(buffer);
                                         buffer.flip();
                                     } while (childChannel.read(buffer) > 0);
 
-                                    LinkedBlockingQueue<ByteBuffer> linkedBlockingQueue = byteMap.get(attr.getUuid());
+                                   /* LinkedBlockingQueue<ByteBuffer> linkedBlockingQueue = byteMap.get(attr.getUuid());
                                     //获取数据
                                     while (true) {
                                         try {
                                             ByteBuffer byteBuffer = linkedBlockingQueue.poll(3000, TimeUnit.SECONDS);
                                             if ((byteBuffer.capacity() == 1 && byteBuffer.array()[0] == -1)) {
+                                                System.out.println(s + ": 从远程接收数据刷入本地退出");
                                                 break;
                                             } else if (Objects.isNull(byteBuffer)) {
                                             } else {
-                                                nPrint(byteBuffer, "从远程接收数据刷入本地为：");
+                                                nPrint(byteBuffer, s + ": 从远程接收数据刷入本地为：");
                                                 childChannel.write(byteBuffer);
                                             }
                                         } catch (Exception e) {
                                             e.printStackTrace();
                                         }
-                                    }
+                                    }*/
                                 }
                                 break;
                         }
@@ -297,7 +309,7 @@ public class App {
     }
 
 
-    private static void connect(final String host, final Integer port, final String uuid) {
+    private static void connect(final String host, final Integer port, final String uuid, SocketChannel childChannel) {
         Selector selector = null;
         try {
             SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress(host, port));
@@ -306,7 +318,7 @@ public class App {
             }
             selector = Selector.open();
             socketChannel.register(selector, SelectionKey.OP_READ);
-            channelMap.put(uuid, new Resource().socketChannel(socketChannel).selector(selector).close(false));
+            channelMap.put(uuid, new Resource().remoteClient(socketChannel).childChannel(childChannel).selector(selector).close(false));
             LinkedBlockingQueue<ByteBuffer> linkedBlockingQueue = new LinkedBlockingQueue<ByteBuffer>();
             byteMap.put(uuid, linkedBlockingQueue);
         } catch (Exception exception) {
@@ -319,12 +331,13 @@ public class App {
                     return;
                 }
                 LinkedBlockingQueue<ByteBuffer> linkedBlockingQueue = byteMap.get(uuid);
+                Resource resource = channelMap.get(uuid);
+                SocketChannel childChannel1 = resource.getChildChannel();
                 try {
                     while (true) {
                         int n = finalSelector.select();
                         if (n == 0) {
-                            if (channelMap.get(uuid).isClose()) {
-                                finalSelector.close();
+                            if (!finalSelector.isOpen()) {
                                 System.out.println("selector 正常退出");
                                 break;
                             }
@@ -339,15 +352,18 @@ public class App {
                             SelectionKey selectionKey = iterator.next();
                             SocketChannel channel = (SocketChannel) selectionKey.channel();
                             if (selectionKey.isReadable()) {
-                                ByteBuffer allocate = ByteBuffer.allocate(4096);
+                                ByteBuffer allocate = ByteBuffer.allocate(30000);
                                 while (channel.read(allocate) > 0) {
                                     allocate.flip();
-                                    nPrint(allocate, "从远程接收数据为：");
-                                    linkedBlockingQueue.add(allocate);
-                                    allocate = ByteBuffer.allocate(4096);
+                                    nPrint(allocate, "从远程接收数据刷入本地为：");
+                                    //nPrint(allocate, "从远程接收数据为：");
+                                    //linkedBlockingQueue.add(allocate);
+                                    //allocate = ByteBuffer.allocate(30000);
+                                    childChannel1.write(allocate);
+                                    allocate.flip();
                                 }
                                 //这里不能直接通知远端刷，因为异步通知远端后，读事件执行结束。后面select时，因为channel数据还没被读取，会导致再次select出来。
-                                linkedBlockingQueue.add(end);
+                                //linkedBlockingQueue.add(end);
                             }
                             iterator.remove();
                         }
