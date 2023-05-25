@@ -15,9 +15,21 @@ import java.nio.channels.SocketChannel;
 import java.util.*;
 
 public class ConnectionHandler extends AbstractHandler {
-    public void connection(ByteBuffer writeBuffer, SelectionKey key, SocketChannel childChannel, Attr attr, String uuid) throws IOException {
+    public ConnectionHandler(Attr attr, SelectionKey key, SocketChannel childChannel) {
+        super(attr, key, childChannel);
+    }
+    public void run() {
+        try {
+            connection();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    public void connection() throws IOException {
+        String uuid = attr.getUuid();
+        ByteBuffer writeBuffer = ByteBuffer.allocate(4096 * 5);
         ByteBuffer buffer = byteBufferMap.get(uuid);
-        if (Objects.isNull(buffer)){
+        if (Objects.isNull(buffer)) {
             System.out.println(uuid + " exception connection get byte ");
             return;
         }
@@ -98,6 +110,10 @@ public class ConnectionHandler extends AbstractHandler {
         key.attach(attr.status(Status.DELIVER));
         //建立异步连接
         connect(host, port, attr.getUuid(), childChannel, key);
+
+        //更换附件
+        DeliverHandler deliverHandler = new DeliverHandler(attr, key, childChannel);
+        key.attach(deliverHandler);
     }
 
     private static void connect(final String host, final Integer port, final String uuid, SocketChannel childChannel, SelectionKey key) {

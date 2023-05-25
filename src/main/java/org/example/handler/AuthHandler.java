@@ -11,7 +11,22 @@ import java.nio.channels.SocketChannel;
 public class AuthHandler extends AbstractHandler {
 
 
-    public void auth(ByteBuffer writeBuffer, SelectionKey key, SocketChannel childChannel, Attr attr, String uuid) throws IOException {
+    public AuthHandler(Attr attr, SelectionKey key, SocketChannel childChannel) {
+        super(attr, key, childChannel);
+    }
+
+    @Override
+    public void run() {
+        try {
+            auth();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void auth() throws IOException {
+        String uuid = attr.getUuid();
+        ByteBuffer writeBuffer = ByteBuffer.allocate(4096 * 5);
         ByteBuffer buffer = byteBufferMap.get(uuid);
         if (buffer == null) {
             buffer = ByteBuffer.allocate(4096 * 5);
@@ -20,7 +35,6 @@ public class AuthHandler extends AbstractHandler {
         byte VER;
         int len;
         len = childChannel.read(buffer);
-        System.out.println(uuid + " 3 buffer position" + buffer.position());
         if (len == -1) {
             close(uuid, key, childChannel);
             return;
@@ -57,5 +71,10 @@ public class AuthHandler extends AbstractHandler {
         childChannel.write(writeBuffer);
         writeBuffer.clear();
         System.out.println(uuid + " 鉴权成功");
+
+        //更换附件
+        ConnectionHandler connectionHandler = new ConnectionHandler(attr, key, childChannel);
+        key.attach(connectionHandler);
     }
+
 }

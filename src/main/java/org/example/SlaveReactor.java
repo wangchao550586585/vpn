@@ -1,12 +1,10 @@
 package org.example;
 
+import org.example.handler.AbstractHandler;
 import org.example.handler.AuthHandler;
-import org.example.handler.ConnectionHandler;
-import org.example.handler.DeliverHandler;
 import org.jctools.queues.atomic.MpscChunkedAtomicArrayQueue;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -64,7 +62,6 @@ public class SlaveReactor implements Runnable {
 
     @Override
     public void run() {
-        ByteBuffer writeBuffer = ByteBuffer.allocate(4096 * 5);
         while (true) {
             try {
                 //醒来可能是有io就绪任务，也可能是普通任务。优先执行io就绪任务。
@@ -85,7 +82,7 @@ public class SlaveReactor implements Runnable {
                 //在这里不及时的修改为wake，最多造成多一次wakeup。对程序影响不大。
                 wakeUpdater.lazySet(AWAKE);
                 if (n > 0) {
-                    processIO(writeBuffer);
+                    processIO();
                 }
                 if (!taskQueue.isEmpty()) {
                     Runnable task = null;
@@ -99,34 +96,21 @@ public class SlaveReactor implements Runnable {
         }
     }
 
-    private void processIO(ByteBuffer writeBuffer) throws IOException {
+    private void processIO() throws IOException {
         Set<SelectionKey> selectionKeys = slaveReactor.selectedKeys();
         Iterator<SelectionKey> iterator = selectionKeys.iterator();
         while (iterator.hasNext()) {
             SelectionKey key = iterator.next();
             if (!key.isValid()) {
-                Attr attr = (Attr) key.attachment();
-                String uuid = attr.getUuid();
-                System.out.println(uuid);
+                AbstractHandler handler = (AbstractHandler) key.attachment();
+                String uuid = handler.getAttr().getUuid();
+                System.out.println(uuid + " exception key was invalid");
                 key.cancel();
                 continue;
             }
             if (key.isReadable()) {
-                SocketChannel childChannel = (SocketChannel) key.channel();
-                Attr attr = (Attr) key.attachment();
-                String uuid = attr.getUuid();
-                Status status = attr.getStatus();
-                //处理粘包问题
-                switch (status) {
-                    case AUTH:
-                        new AuthHandler().auth(writeBuffer, key, childChannel, attr, uuid);
-                        break;
-                    case CONNECTION:
-                        new ConnectionHandler().connection(writeBuffer, key, childChannel, attr, uuid);
-                        break;
-                    case DELIVER:
-                        new DeliverHandler().deliver(key, childChannel, uuid);
-                }
+                Runnable runnable = (Runnable) key.attachment();
+                runnable.run();
             }
             iterator.remove();
         }
@@ -139,7 +123,9 @@ public class SlaveReactor implements Runnable {
                 //select和register会造成阻塞
                 SelectionKey selectionKey = childChannel.register(slaveReactor, 0);
                 String uuid = UUID.randomUUID().toString().replaceAll("-", "");
-                selectionKey.attach(new Attr().status(Status.AUTH).uuid(uuid));
+                Attr attr = new Attr().status(Status.AUTH).uuid(uuid);
+                AuthHandler authHandler = new AuthHandler(attr, selectionKey, childChannel);
+                selectionKey.attach(authHandler);
                 selectionKey.interestOps(SelectionKey.OP_READ);
             } catch (IOException e) {
                 throw new RuntimeException(e);

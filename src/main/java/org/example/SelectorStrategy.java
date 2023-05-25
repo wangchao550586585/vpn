@@ -1,7 +1,5 @@
 package org.example;
 
-import java.io.IOException;
-import java.nio.channels.Selector;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SelectorStrategy {

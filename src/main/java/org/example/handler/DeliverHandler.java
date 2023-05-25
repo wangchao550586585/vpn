@@ -1,5 +1,6 @@
 package org.example.handler;
 
+import org.example.Attr;
 import org.example.Resource;
 
 import java.io.IOException;
@@ -9,9 +10,20 @@ import java.nio.channels.SocketChannel;
 import java.util.Objects;
 
 public class DeliverHandler extends AbstractHandler {
-    public void deliver(SelectionKey key, SocketChannel childChannel, String uuid) throws IOException {
+    public DeliverHandler(Attr attr, SelectionKey key, SocketChannel childChannel) {
+        super(attr, key, childChannel);
+    }
+    public void run() {
+        try {
+            deliver();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    public void deliver() throws IOException {
+        String uuid = attr.getUuid();
         ByteBuffer buffer = byteBufferMap.get(uuid);
-        if (Objects.isNull(buffer)){
+        if (Objects.isNull(buffer)) {
             System.out.println(uuid + " exception deliver get byte  ");
             return;
         }
