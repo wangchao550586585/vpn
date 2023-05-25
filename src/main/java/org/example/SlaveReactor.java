@@ -8,10 +8,12 @@ import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 public class SlaveReactor implements Runnable {
     private Selector slaveReactor;
+    private String id;
     private Queue<Runnable> taskQueue;
     private volatile int state = ST_NOT_STARTED;
     private static final int ST_NOT_STARTED = 1;
@@ -20,9 +22,13 @@ public class SlaveReactor implements Runnable {
     private static final AtomicIntegerFieldUpdater<SlaveReactor> STATE_UPDATER = AtomicIntegerFieldUpdater.newUpdater(SlaveReactor.class, "state");
     private static Map<String, ByteBuffer> byteBufferMap = new ConcurrentHashMap<String, ByteBuffer>();
     private static Map<String, Resource> channelMap = new ConcurrentHashMap<String, Resource>();
+    private static final int AWAKE = -1;
+    private static final int SYNC = 1;
+    private AtomicInteger wakeUpdater = new AtomicInteger(AWAKE);
 
     public SlaveReactor() {
         try {
+            id = UUID.randomUUID().toString();
             this.slaveReactor = Selector.open();
             this.taskQueue = new MpscChunkedAtomicArrayQueue<Runnable>(1024, 1024 * 2);
         } catch (IOException e) {
@@ -47,7 +53,13 @@ public class SlaveReactor implements Runnable {
                 }
             }
         } else {
-            slaveReactor.wakeup();
+            //设置状态为唤醒，如果上一个select状态为唤醒态则当过这次唤醒。
+            if (wakeUpdater.getAndSet(AWAKE) != AWAKE) {
+                System.out.println(id + " 唤醒成功");
+                slaveReactor.wakeup();
+            } else {
+                System.out.println(id + " 唤醒失败");
+            }
         }
     }
 
@@ -63,10 +75,15 @@ public class SlaveReactor implements Runnable {
                 //2：没io就绪，有task，处理task。
                 int n = -1;
                 if (taskQueue.isEmpty()) {
+                    System.out.println(id + " 切换sync");
+                    wakeUpdater.set(SYNC);
                     n = slaveReactor.select();
                 } else {
                     n = slaveReactor.selectNow();
                 }
+                //修改为唤醒状态
+                System.out.println(id + " 切换AWAKE");
+                wakeUpdater.lazySet(AWAKE);
                 if (n > 0) {
                     processIO(writeBuffer);
                 }
