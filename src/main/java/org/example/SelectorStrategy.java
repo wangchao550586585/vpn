@@ -7,7 +7,7 @@ public class SelectorStrategy {
     private AtomicInteger index;
 
     public SelectorStrategy(int size) {
-        slaveReactor = new SlaveReactor[1];
+        slaveReactor = new SlaveReactor[size];
         for (int i = 0; i < slaveReactor.length; i++) {
             slaveReactor[i] = new SlaveReactor();
         }

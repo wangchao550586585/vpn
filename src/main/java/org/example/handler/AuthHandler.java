@@ -1,7 +1,6 @@
 package org.example.handler;
 
 import org.example.Attr;
-import org.example.Status;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -36,18 +35,19 @@ public class AuthHandler extends AbstractHandler {
         int len;
         len = childChannel.read(buffer);
         if (len == -1) {
+            LOGGER.warn("读取结束退出 {}", uuid);
             close(uuid, key, childChannel);
             return;
         }
         //auth协议最少有3位
         if (len < 3) {
-            System.out.println(uuid + " 数据包不完整");
+            LOGGER.warn("数据包不完整 {}", uuid);
             return;
         }
         swapReadMode(buffer);
         VER = buffer.get();
         if (0x05 > VER) {
-            System.out.println(uuid + " 版本号错误或版本过低，只能支持5");
+            LOGGER.warn("版本号错误或版本过低，只能支持5 {}", uuid);
             close(uuid, key, childChannel);
             return;
         }
@@ -55,7 +55,7 @@ public class AuthHandler extends AbstractHandler {
         //读取数据不够，接着重读
         if (buffer.remaining() < NMETHODS) {
             swapWriteMode(buffer);
-            System.out.println(uuid + " 数据包不完整");
+            LOGGER.warn("数据包不完整 {}", uuid);
             return;
         }
         for (int i = 0; i < NMETHODS; i++) {
@@ -64,17 +64,15 @@ public class AuthHandler extends AbstractHandler {
         //说明读取正常,后面的method不校验了，直接clean。
         buffer.clear();
         //2~255
-        key.attach(attr.status(Status.CONNECTION));
         writeBuffer.put((byte) 5);
         writeBuffer.put((byte) 0);
         writeBuffer.flip();
         childChannel.write(writeBuffer);
         writeBuffer.clear();
-        System.out.println(uuid + " 鉴权成功");
-
         //更换附件
         ConnectionHandler connectionHandler = new ConnectionHandler(attr, key, childChannel);
         key.attach(connectionHandler);
+        LOGGER.info("鉴权成功 {}", uuid);
     }
 
 }

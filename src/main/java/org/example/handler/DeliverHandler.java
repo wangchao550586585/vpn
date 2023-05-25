@@ -24,25 +24,25 @@ public class DeliverHandler extends AbstractHandler {
         String uuid = attr.getUuid();
         ByteBuffer buffer = byteBufferMap.get(uuid);
         if (Objects.isNull(buffer)) {
-            System.out.println(uuid + " exception deliver get byte  ");
+            LOGGER.warn("exception deliver get byte {}", uuid);
             return;
         }
         Resource resource = channelMap.get(uuid);
         if (Objects.isNull(resource)) {
             // 走到这里说明连接远端地址失败，因为他会关闭流，所以跳过即可。
-            System.out.println(uuid + " exception child  close");
+            LOGGER.warn("exception child  close {}", uuid);
             return;
         }
         SocketChannel remoteClient = resource.getRemoteClient();
         try {
             //获取服务端数据
             if (!childChannel.isOpen()) {
-                System.out.println(uuid + " channel 已经关闭");
+                LOGGER.warn("channel 已经关闭 {}", uuid);
                 return;
             }
             int read = childChannel.read(buffer);
             if (read < 0) {
-                System.out.println(uuid + " child  close");
+                LOGGER.info("child read end {}", uuid);
                 remoteClient.close();
                 resource.getSelector().close(); //close调用会调用wakeup
                 close(uuid, key, childChannel);
@@ -54,14 +54,14 @@ public class DeliverHandler extends AbstractHandler {
                     remoteClient.write(buffer);
                     buffer.clear();
                 } while (childChannel.read(buffer) > 0);
-                System.out.println(uuid + " child -> remote  end");
+                LOGGER.info("child -> remote  end {}", uuid);
             }
         } catch (Exception exception) {
-            System.out.println(uuid + " exception child  close" + exception.getMessage());
+            LOGGER.error("child  close "+uuid, exception);
             remoteClient.close();
             resource.getSelector().close();
             close(uuid, key, childChannel);
-            //exception.printStackTrace();
+            throw new RuntimeException(exception);
         }
     }
 

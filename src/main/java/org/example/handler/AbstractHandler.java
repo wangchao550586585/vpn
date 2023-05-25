@@ -1,5 +1,7 @@
 package org.example.handler;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.example.Attr;
 import org.example.Resource;
 
@@ -11,6 +13,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class AbstractHandler implements Runnable {
+    protected final Logger LOGGER = LogManager.getLogger(this.getClass());
     protected static Map<String, ByteBuffer> byteBufferMap = new ConcurrentHashMap<String, ByteBuffer>();
     protected static Map<String, Resource> channelMap = new ConcurrentHashMap<String, Resource>();
     protected final Attr attr;
@@ -23,13 +26,13 @@ public abstract class AbstractHandler implements Runnable {
         this.childChannel = childChannel;
     }
 
-    protected static void close(String uuid, SelectionKey key, SocketChannel childChannel) {
+    protected void close(String uuid, SelectionKey key, SocketChannel childChannel) {
         byteBufferMap.remove(uuid);
         key.cancel();
         try {
             childChannel.close();
         } catch (IOException e) {
-            System.out.println(uuid + " error close childChannel");
+            LOGGER.error("close childChannel "+uuid, e);
             throw new RuntimeException(e);
         }
     }
