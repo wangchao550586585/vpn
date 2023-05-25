@@ -61,7 +61,7 @@ public class DeliverHandler extends AbstractHandler {
             remoteClient.close();
             resource.getSelector().close();
             close(uuid, key, childChannel);
-            throw new RuntimeException(exception);
+            // TODO: 2023/5/26 这里不能往上抛异常
         }
     }
 

@@ -151,7 +151,8 @@ public class ConnectionHandler extends AbstractHandler {
             LOGGER.info("连接远端成功 {}", uuid);
         } catch (Exception exception) {
             LOGGER.error("remote connect fail fail " + uuid, exception);
-            throw new RuntimeException(exception);
+            // TODO: 2023/5/26 这里不能往上抛异常
+            return;
         }
         Selector finalSelector = selector;
         Thread thread = new Thread(() -> {
