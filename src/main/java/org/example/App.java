@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class App {
     private static Map<String, Resource> channelMap = new ConcurrentHashMap<String, Resource>();
+    private static Map<String, ByteBuffer> byteBufferMap = new ConcurrentHashMap<String, ByteBuffer>();
 
     public static void main(String[] args) throws Exception {
         new App().vpnStart();
@@ -23,7 +24,6 @@ public class App {
         serverSocketChannel.configureBlocking(false);
         Selector selector = Selector.open();
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
-        ByteBuffer buffer = ByteBuffer.allocate(4096 * 5);
         ByteBuffer writeBuffer = ByteBuffer.allocate(4096 * 5);
         while (true) {
             int n = selector.select();
@@ -55,27 +55,53 @@ public class App {
                         Attr attr = (Attr) key.attachment();
                         String uuid = attr.getUuid();
                         Status status = attr.getStatus();
-                        String[] msg = null;
                         // TODO: 2023/5/23  处理粘包问题
+                        ByteBuffer buffer = byteBufferMap.get(uuid);
+                        if (buffer == null) {
+                            buffer = ByteBuffer.allocate(4096 * 5);
+                            System.out.println(buffer.position());
+                            buffer.clear();
+                            byteBufferMap.put(uuid, buffer);
+
+                        }
+                        //ByteBuffer buffer = byteBufferMap.getOrDefault(uuid, allocate1);
+                        System.out.println(buffer.position());
                         int len;
                         byte VER;
                         switch (status) {
                             case AUTH:
+                                System.out.println(buffer.position());
                                 len = childChannel.read(buffer);
+                                System.out.println(buffer.position());
                                 if (len == -1) {
-                                    key.cancel();
-                                    childChannel.close();
+                                    close(uuid, key, childChannel);
                                     continue;
                                 }
-                                buffer.flip();
+                                System.out.println(buffer.position());
+                                //auth协议最少有3位
+                                if (len < 3) {
+                                    System.out.println(uuid + " 数据包不完整");
+                                    continue;
+                                }
+                                swapReadMode(buffer);
                                 VER = buffer.get();
                                 if (0x05 > VER) {
                                     System.out.println(uuid + " 版本号错误或版本过低，只能支持5");
-                                    key.cancel();
-                                    childChannel.close();
+                                    close(uuid, key, childChannel);
                                     continue;
                                 }
                                 byte NMETHODS = buffer.get();
+                                //读取数据不够，接着重读
+                                if (buffer.remaining() < NMETHODS) {
+                                    swapWriteMode(buffer);
+                                    System.out.println(uuid + " 数据包不完整");
+                                    continue;
+                                }
+                                for (int i = 0; i < NMETHODS; i++) {
+                                    buffer.get();
+                                }
+                                //说明读取正常,后面的method不校验了，直接clean。
+                                buffer.clear();
                                 //2~255
                                 key.attach(attr.status(Status.CONNECTION));
                                 writeBuffer.put((byte) 5);
@@ -86,31 +112,27 @@ public class App {
                                 System.out.println(uuid + " 鉴权成功");
                                 break;
                             case CONNECTION:
-                                len = 0;
-                                try {
-                                    len = childChannel.read(buffer);
-                                } catch (Exception e) {
-                                    System.out.println(uuid);
-                                    e.printStackTrace();
-                                }
+                                len = childChannel.read(buffer);
                                 if (len == -1) {
-                                    key.cancel();
-                                    childChannel.close();
+                                    close(uuid, key, childChannel);
                                     continue;
                                 }
-                                buffer.flip();
+                                //协议最少5位
+                                if (len < 5) {
+                                    System.out.println(uuid + " 数据包不完整");
+                                    continue;
+                                }
+                                swapReadMode(buffer);
                                 VER = buffer.get();
                                 if (0x05 > VER) {
+                                    close(uuid, key, childChannel);
                                     System.out.println(uuid + " 版本号错误或版本过低，只能支持5");
-                                    key.cancel();
-                                    childChannel.close();
                                     continue;
                                 }
                                 byte CMD = buffer.get();
                                 if (0x01 != CMD) {
+                                    close(uuid, key, childChannel);
                                     System.out.println(uuid + " 协议格式不对");
-                                    key.cancel();
-                                    childChannel.close();
                                     continue;
                                 }
                                 byte RSV = buffer.get();
@@ -118,11 +140,21 @@ public class App {
                                 String host = null;
                                 Integer port = 0;
                                 if (0x01 == ATYP) {//IPV4
+                                    if (buffer.remaining()+1 < 6) {
+                                        swapWriteMode(buffer);
+                                        System.out.println(uuid + " 数据包不完整");
+                                        continue;
+                                    }
                                     host = Utils.byteToInt(buffer.get()) + "." + Utils.byteToInt(buffer.get()) + "." + Utils.byteToInt(buffer.get()) + "." + Utils.byteToInt(buffer.get());
                                     port = Utils.byteToInt(buffer.get()) * 256 + Utils.byteToInt(buffer.get());
                                     System.out.println(uuid + " IPV4 host: " + host + " port:" + port + " remoteAddress" + childChannel.getRemoteAddress());
                                 } else if (0x03 == ATYP) {//域名
                                     byte hostnameSize = buffer.get();
+                                    if (buffer.remaining() < hostnameSize) {
+                                        swapWriteMode(buffer);
+                                        System.out.println(uuid + " 数据包不完整");
+                                        continue;
+                                    }
                                     byte[] b = new byte[hostnameSize];
                                     for (int i = 0; i < hostnameSize; i++) {
                                         b[i] = buffer.get();
@@ -133,15 +165,16 @@ public class App {
                                     System.out.println(uuid + " 域名访问 host: " + host + " port:" + port + " remoteAddress" + childChannel.getRemoteAddress());
                                 } else if (0x04 == ATYP) {//IPV6
                                     System.out.println("不支持IPV6访问");
-                                    key.cancel();
-                                    childChannel.close();
+                                    close(uuid, key, childChannel);
                                     continue;
                                 } else {
                                     System.out.println("不知道的访问方式");
-                                    key.cancel();
-                                    childChannel.close();
+                                    close(uuid, key, childChannel);
                                     continue;
                                 }
+                                //说明正常读取结束，切换为写模式。
+                                buffer.clear();
+
                                 writeBuffer.put((byte) 5);
                                 writeBuffer.put((byte) 0);
                                 writeBuffer.put((byte) 0);
@@ -175,17 +208,15 @@ public class App {
                                     if (read < 0) {
                                         System.out.println(uuid + " child  close");
                                         remoteClient.close();
-                                        //resource.getSelector().wakeup();
                                         resource.getSelector().close(); //close调用会调用wakeup
-                                        key.cancel();
-                                        childChannel.close();
+                                        close(uuid, key, childChannel);
                                     } else {
                                         do {
                                             buffer.flip();
                                             //nPrint(buffer, uuid + ": 写入远程服务器数据为：");
                                             //nPrintByte(buffer, uuid + " child -> remote ：");
                                             remoteClient.write(buffer);
-                                            buffer.flip();
+                                            buffer.clear();
                                         } while (childChannel.read(buffer) > 0);
                                         System.out.println(uuid + " child -> remote  end");
                                     }
@@ -193,13 +224,11 @@ public class App {
                                     System.out.println(uuid + " error child  close" + exception.getMessage());
                                     remoteClient.close();
                                     resource.getSelector().close();
-                                    key.cancel();
-                                    childChannel.close();
+                                    close(uuid, key, childChannel);
                                     //exception.printStackTrace();
                                 }
                                 break;
                         }
-                        buffer.clear();
                     }
                     iterator.remove();
                 }
@@ -207,6 +236,28 @@ public class App {
                 e.printStackTrace();
             }
         }
+    }
+
+    private static void close(String uuid, SelectionKey key, SocketChannel childChannel) {
+        byteBufferMap.remove(uuid);
+        key.cancel();
+        try {
+            childChannel.close();
+        } catch (IOException e) {
+            System.out.println(uuid + " error close childChannel");
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void swapReadMode(ByteBuffer buffer) {
+        buffer.flip();
+        buffer.mark();
+
+    }
+
+    private void swapWriteMode(ByteBuffer buffer) {
+        buffer.reset();
+        buffer.flip();
     }
 
 
@@ -283,14 +334,13 @@ public class App {
                                 do {
                                     allocate.flip();
                                     childChannel1.write(allocate);
-                                    allocate.flip();
+                                    allocate.clear();
                                 } while (channel.read(allocate) > 0);
                                 if (read < 0) {
                                     System.out.println(uuid + " remote -> read end so close channel and select");
                                     channel.close();
                                     finalSelector.close();
-                                    selectionKey1.cancel();
-                                    childChannel1.close();
+                                    close(uuid, selectionKey1, childChannel1);
                                     break;
                                 } else {
                                     System.out.println(uuid + " remote  -> child end");
