@@ -36,7 +36,7 @@ public class ConnectionHandler extends AbstractHandler {
         int len = childChannel.read(buffer);
         if (len == -1) {
             LOGGER.warn("读取结束退出 {}", uuid);
-            close(uuid, key, childChannel);
+            closeChildChannel();
             return;
         }
         //协议最少5位
@@ -47,13 +47,13 @@ public class ConnectionHandler extends AbstractHandler {
         swapReadMode(buffer);
         byte VER = buffer.get();
         if (0x05 > VER) {
-            close(uuid, key, childChannel);
+            closeChildChannel();
             LOGGER.warn("版本号错误或版本过低，只能支持5 {}", uuid);
             return;
         }
         byte CMD = buffer.get();
         if (0x01 != CMD) {
-            close(uuid, key, childChannel);
+            closeChildChannel();
             LOGGER.warn("协议格式不对 {}", uuid);
             return;
         }
@@ -88,11 +88,11 @@ public class ConnectionHandler extends AbstractHandler {
             LOGGER.info("IPV4 host:{}  port:{}  remoteAddress:{} {}", host, port, childChannel.getRemoteAddress(), uuid);
         } else if (0x04 == ATYP) {//IPV6
             LOGGER.warn("不支持IPV6访问 {}", uuid);
-            close(uuid, key, childChannel);
+            closeChildChannel();
             return;
         } else {
             LOGGER.warn("不知道的访问方式 {}", uuid);
-            close(uuid, key, childChannel);
+            closeChildChannel();
             return;
         }
         //说明正常读取结束，切换为写模式。
@@ -111,7 +111,7 @@ public class ConnectionHandler extends AbstractHandler {
         childChannel.write(writeBuffer);
         writeBuffer.clear();
         //建立异步连接
-        connect(host, port, attr.getUuid(), childChannel, key);
+        connect(host, port, attr.getUuid(), childChannel);
 
         //更换附件
         DeliverHandler deliverHandler = new DeliverHandler(attr, key, childChannel);
@@ -119,8 +119,8 @@ public class ConnectionHandler extends AbstractHandler {
         LOGGER.info("连接成功 {}", uuid);
     }
 
-    private void connect(final String host, final Integer port, final String uuid, SocketChannel childChannel, SelectionKey key) {
-        Selector selector = null;
+    private void connect(final String host, final Integer port, final String uuid, SocketChannel childChannel) {
+        Selector selector ;
         try {
             SocketChannel socketChannel = SocketChannel.open();
             Timer timer = new Timer();
@@ -131,8 +131,7 @@ public class ConnectionHandler extends AbstractHandler {
                         try {
                             socketChannel.close();
                             LOGGER.error("remote connect fail {}", uuid);
-                            key.cancel();
-                            childChannel.close();
+                            closeChildChannel();
                         } catch (Exception e) {
                             LOGGER.error("remote connect fail , so cancel fail " + uuid, e);
                             throw new RuntimeException(e);
@@ -162,7 +161,6 @@ public class ConnectionHandler extends AbstractHandler {
             }
             Resource resource = channelMap.get(uuid);
             SocketChannel childChannel1 = resource.getChildChannel();
-            SelectionKey selectionKey1 = resource.childSKey();
             try {
                 while (true) {
                     if (!finalSelector.isOpen()) {
@@ -184,6 +182,7 @@ public class ConnectionHandler extends AbstractHandler {
                     Iterator<SelectionKey> iterator = selectionKeys.iterator();
                     while (iterator.hasNext()) {
                         SelectionKey selectionKey = iterator.next();
+                        iterator.remove();
                         SocketChannel channel = (SocketChannel) selectionKey.channel();
                         if (selectionKey.isReadable()) {
                             try {
@@ -193,7 +192,7 @@ public class ConnectionHandler extends AbstractHandler {
                                     LOGGER.info("remote read end {}", uuid);
                                     channel.close();
                                     finalSelector.close();
-                                    close(uuid, selectionKey1, childChannel1);
+                                    closeChildChannel();
                                     break;
                                 }
                                 do {
@@ -208,7 +207,6 @@ public class ConnectionHandler extends AbstractHandler {
                                 throw new RuntimeException(exception);
                             }
                         }
-                        iterator.remove();
                     }
                 }
             } catch (Exception exception) {

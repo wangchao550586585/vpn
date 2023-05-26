@@ -34,7 +34,7 @@ public class AuthHandler extends AbstractHandler {
         len = childChannel.read(buffer);
         if (len == -1) {
             LOGGER.warn("读取结束退出 {}", uuid);
-            close(uuid, key, childChannel);
+            closeChildChannel();
             return;
         }
         //auth协议最少有3位
@@ -46,7 +46,7 @@ public class AuthHandler extends AbstractHandler {
         VER = buffer.get();
         if (0x05 > VER) {
             LOGGER.warn("版本号错误或版本过低，只能支持5 {}", uuid);
-            close(uuid, key, childChannel);
+            closeChildChannel();
             return;
         }
         byte NMETHODS = buffer.get();

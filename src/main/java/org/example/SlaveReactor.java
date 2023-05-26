@@ -155,11 +155,7 @@ public class SlaveReactor implements Runnable {
                 //在这里不及时的修改为wake，最多造成多一次wakeup。对程序影响不大。
                 wakeUpdater.lazySet(AWAKE);
                 if (n > 0) {
-                    if (null == selectedKeys) {
-                        processIO();
-                    } else {
-                        processIOOptimized();
-                    }
+                    process();
                 }
                 if (!taskQueue.isEmpty()) {
                     Runnable task;
@@ -174,22 +170,19 @@ public class SlaveReactor implements Runnable {
         }
     }
 
+    private void process() {
+        if (null == selectedKeys) {
+            processIO();
+        } else {
+            processIOOptimized();
+        }
+    }
+
     private void processIOOptimized() {
         for (int i = 0; i < selectedKeys.size; i++) {
             SelectionKey key = selectedKeys.keys[i];
             selectedKeys.keys[i] = null;
-
-            if (!key.isValid()) {
-                AbstractHandler handler = (AbstractHandler) key.attachment();
-                String uuid = handler.getAttr().getUuid();
-                LOGGER.error("key was invalid {}", uuid);
-                key.cancel();
-                continue;
-            }
-            if (key.isReadable()) {
-                Runnable runnable = (Runnable) key.attachment();
-                runnable.run();
-            }
+            handler(key);
         }
     }
 
@@ -198,18 +191,23 @@ public class SlaveReactor implements Runnable {
         Iterator<SelectionKey> iterator = selectionKeys.iterator();
         while (iterator.hasNext()) {
             SelectionKey key = iterator.next();
-            if (!key.isValid()) {
-                AbstractHandler handler = (AbstractHandler) key.attachment();
-                String uuid = handler.getAttr().getUuid();
-                LOGGER.error("key was invalid {}", uuid);
-                key.cancel();
-                continue;
-            }
-            if (key.isReadable()) {
-                Runnable runnable = (Runnable) key.attachment();
-                runnable.run();
-            }
             iterator.remove();
+            handler(key);
+        }
+    }
+
+    private void handler(SelectionKey key) {
+        //主动调用cancel，close chanle，close selector会key失效
+        if (!key.isValid()) {
+            AbstractHandler handler = (AbstractHandler) key.attachment();
+            String uuid = handler.getAttr().getUuid();
+            LOGGER.error("key was invalid {}", uuid);
+            handler.closeChildChannel();//这里会取消key
+            return;
+        }
+        if (key.isReadable()) {
+            Runnable runnable = (Runnable) key.attachment();
+            runnable.run();
         }
     }
 

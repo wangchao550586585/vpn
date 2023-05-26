@@ -26,9 +26,9 @@ public abstract class AbstractHandler implements Runnable {
         this.childChannel = childChannel;
     }
 
-    protected void close(String uuid, SelectionKey key, SocketChannel childChannel) {
+    public void closeChildChannel() {
+        String uuid = attr.getUuid();
         byteBufferMap.remove(uuid);
-        key.cancel();
         try {
             childChannel.close();
         } catch (IOException e) {

@@ -40,12 +40,12 @@ public class App {
 
                 while (iterator.hasNext()) {
                     SelectionKey key = iterator.next();
+                    iterator.remove();
                     if (key.isAcceptable()) {
                         ServerSocketChannel serverChannel = (ServerSocketChannel) key.channel();
                         SocketChannel childChannel = serverChannel.accept();
                         selectorStrategy.getSlaveReactor().register(childChannel);
                     }
-                    iterator.remove();
                 }
             }
         } catch (Exception e) {

@@ -45,7 +45,7 @@ public class DeliverHandler extends AbstractHandler {
                 LOGGER.info("child read end {}", uuid);
                 remoteClient.close();
                 resource.getSelector().close(); //close调用会调用wakeup
-                close(uuid, key, childChannel);
+                closeChildChannel();
             } else {
                 do {
                     buffer.flip();
@@ -60,7 +60,7 @@ public class DeliverHandler extends AbstractHandler {
             LOGGER.error("child  close "+uuid, exception);
             remoteClient.close();
             resource.getSelector().close();
-            close(uuid, key, childChannel);
+            closeChildChannel();
             // TODO: 2023/5/26 这里不能往上抛异常
         }
     }
