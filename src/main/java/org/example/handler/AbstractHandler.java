@@ -2,8 +2,8 @@ package org.example.handler;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.example.Attr;
-import org.example.Resource;
+import org.example.entity.Attr;
+import org.example.entity.Resource;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

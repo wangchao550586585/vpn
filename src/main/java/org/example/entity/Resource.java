@@ -1,4 +1,4 @@
-package org.example;
+package org.example.entity;
 
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;

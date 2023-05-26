@@ -4,12 +4,9 @@ package org.example;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.*;
 import java.net.*;
-import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Hello world!
@@ -29,7 +26,8 @@ public class App {
             serverSocketChannel.configureBlocking(false);
             Selector masterReactor = Selector.open();
             LOGGER.debug("MasterReactor selector open success");
-            SelectorStrategy selectorStrategy = new SelectorStrategy(6);
+            SelectorStrategy selectorStrategy = new SelectorStrategy();
+            LOGGER.debug("slaveReactor open Selector all success");
             serverSocketChannel.register(masterReactor, SelectionKey.OP_ACCEPT);
             LOGGER.debug("MasterReactor channel register success");
             while (true) {

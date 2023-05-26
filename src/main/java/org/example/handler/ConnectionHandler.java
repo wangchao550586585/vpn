@@ -1,8 +1,8 @@
 package org.example.handler;
 
-import org.example.Attr;
-import org.example.Resource;
-import org.example.Utils;
+import org.example.entity.Attr;
+import org.example.entity.Resource;
+import org.example.util.Utils;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;

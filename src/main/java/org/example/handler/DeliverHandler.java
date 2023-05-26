@@ -1,7 +1,7 @@
 package org.example.handler;
 
-import org.example.Attr;
-import org.example.Resource;
+import org.example.entity.Attr;
+import org.example.entity.Resource;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

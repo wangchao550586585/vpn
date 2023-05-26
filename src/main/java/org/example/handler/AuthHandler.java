@@ -1,6 +1,6 @@
 package org.example.handler;
 
-import org.example.Attr;
+import org.example.entity.Attr;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

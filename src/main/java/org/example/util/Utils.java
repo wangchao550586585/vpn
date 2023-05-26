@@ -1,6 +1,8 @@
-package org.example;
+package org.example.util;
 
 import java.nio.ByteBuffer;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.Arrays;
 
 public class Utils {
@@ -70,4 +72,38 @@ public class Utils {
         }
         return hex;
     }
+    public static int javaVersion() {
+        String key = "java.specification.version";
+        String version = "1.6";
+        String value;
+        if (System.getSecurityManager() == null) {
+            value = System.getProperty(key);
+        } else {
+            value = AccessController.doPrivileged((PrivilegedAction<String>) () -> System.getProperty(key));
+
+        }
+        version = value == null ? version : value;
+        return majorVersion(version);
+    }
+
+    public static int majorVersion(String version) {
+        final String[] components = version.split("\\.");
+        int[] javaVersion = new int[components.length];
+        for (int i = 0; i < javaVersion.length; i++) {
+            javaVersion[i] = Integer.parseInt(components[i]);
+        }
+        if (javaVersion[0] == 1) {
+            assert javaVersion[1] >= 6;
+            return javaVersion[1];
+        }
+        return javaVersion[0];
+    }
+    public static ClassLoader getSystemClassLoader() {
+        if (System.getSecurityManager() == null) {
+            return ClassLoader.getSystemClassLoader();
+        } else {
+            return AccessController.doPrivileged((PrivilegedAction<ClassLoader>) () -> ClassLoader.getSystemClassLoader());
+        }
+    }
+
 }
