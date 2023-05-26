@@ -8,8 +8,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
 public class AuthHandler extends AbstractHandler {
-
-
     public AuthHandler(Attr attr, SelectionKey key, SocketChannel childChannel) {
         super(attr, key, childChannel);
     }

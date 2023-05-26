@@ -101,7 +101,8 @@ public class ConnectionHandler extends AbstractHandler {
         writeBuffer.put((byte) 5);
         writeBuffer.put((byte) 0);
         writeBuffer.put((byte) 0);
-        writeBuffer.put(ATYP);
+        //这里写死，后面紧接着6位hose和port
+        writeBuffer.put((byte) 1);
         //put host
         writeBuffer.put(new byte[]{0, 0, 0, 0});
         //put port
