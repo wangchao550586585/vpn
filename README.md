@@ -1,12 +1,25 @@
 # vpn
+## 特性
+1. 主从Reactor
+2. 针对select和register死锁问题，通过异步任务解决。
+3. 优化selectkey，采用数组替换set，性能提高2%
+4. 支持自动伸缩缓冲区（开发中）
+5. 缓冲区对象池化（开发中）
+6. 实现http协议（开发中）
+7. 实现websocket协议（开发中）
+8. 实现tcp，udp。（开发中）
 
-## safari浏览器支持
-
+## 浏览器支持
+### chrome
+首先开启socks5代理
+<img width="1291" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/1195e170-2eff-4ff0-baf7-af6a0406ad11">
+<img width="1355" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/dfcff39b-bcd5-4587-b29f-613ba1507693">
+可以正常访问
+<img width="985" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/02190f36-8e12-4bef-9248-cc21aeae1952">
+### safari
 首先开启socks5代理
 <img width="805" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/0f597864-86a6-431d-8650-b374b84bbbb6">
-
 可以正常访问
-
 <img width="985" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/02190f36-8e12-4bef-9248-cc21aeae1952">
 
 ## 调试
@@ -59,3 +72,9 @@ tlsv加密正常。
 4. 减少频繁wakeup操作
       可以看的到简单访问下，少了58次访问。
 <img width="951" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/e4b3cbb6-de88-4f8f-9465-01b46fa6d0c6">
+5. 针对socks5协议的升级过程抽出3个方法。
+6. 集成log4j，并添加彩色打印。
+7. 优化selectkey，采用数组替换set，性能提高2%
+8. 解决谷歌浏览器无法访问问题
+9. 针对select和register死锁问题，通过异步任务解决。t添加
+10. 针对select和register死锁问题，通过异步任务解决。
