@@ -1,15 +1,13 @@
 package org.example.handler;
 
-import org.example.entity.Attr;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
 public class AuthHandler extends AbstractHandler {
-    public AuthHandler(Attr attr, SelectionKey key, SocketChannel childChannel) {
-        super(attr, key, childChannel);
+    public AuthHandler(SelectionKey key, SocketChannel childChannel, String uuid) {
+        super(key, childChannel, uuid);
     }
 
     @Override
@@ -22,7 +20,6 @@ public class AuthHandler extends AbstractHandler {
     }
 
     public void auth() throws IOException {
-        String uuid = attr.getUuid();
         ByteBuffer writeBuffer = ByteBuffer.allocate(4096 * 5);
         ByteBuffer buffer = byteBufferMap.get(uuid);
         if (buffer == null) {
@@ -68,7 +65,7 @@ public class AuthHandler extends AbstractHandler {
         childChannel.write(writeBuffer);
         writeBuffer.clear();
         //更换附件
-        ConnectionHandler connectionHandler = new ConnectionHandler(attr, key, childChannel);
+        ConnectionHandler connectionHandler = new ConnectionHandler(key, childChannel, uuid);
         key.attach(connectionHandler);
         LOGGER.info("鉴权成功 {}", uuid);
     }

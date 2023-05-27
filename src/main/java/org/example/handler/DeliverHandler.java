@@ -1,6 +1,5 @@
 package org.example.handler;
 
-import org.example.entity.Attr;
 import org.example.entity.Resource;
 
 import java.io.IOException;
@@ -10,8 +9,8 @@ import java.nio.channels.SocketChannel;
 import java.util.Objects;
 
 public class DeliverHandler extends AbstractHandler {
-    public DeliverHandler(Attr attr, SelectionKey key, SocketChannel childChannel) {
-        super(attr, key, childChannel);
+    public DeliverHandler(SelectionKey key, SocketChannel childChannel,String uuid) {
+        super(key, childChannel,uuid);
     }
     public void run() {
         try {
@@ -21,7 +20,6 @@ public class DeliverHandler extends AbstractHandler {
         }
     }
     public void deliver() throws IOException {
-        String uuid = attr.getUuid();
         ByteBuffer buffer = byteBufferMap.get(uuid);
         if (Objects.isNull(buffer)) {
             LOGGER.warn("exception deliver get byte {}", uuid);

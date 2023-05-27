@@ -1,6 +1,5 @@
 package org.example.handler;
 
-import org.example.entity.Attr;
 import org.example.entity.Resource;
 import org.example.util.Utils;
 
@@ -13,8 +12,8 @@ import java.nio.channels.SocketChannel;
 import java.util.*;
 
 public class ConnectionHandler extends AbstractHandler {
-    public ConnectionHandler(Attr attr, SelectionKey key, SocketChannel childChannel) {
-        super(attr, key, childChannel);
+    public ConnectionHandler(SelectionKey key, SocketChannel childChannel,String uuid) {
+        super( key, childChannel,uuid);
     }
 
     public void run() {
@@ -26,7 +25,6 @@ public class ConnectionHandler extends AbstractHandler {
     }
 
     public void connection() throws IOException {
-        String uuid = attr.getUuid();
         ByteBuffer writeBuffer = ByteBuffer.allocate(4096 * 5);
         ByteBuffer buffer = byteBufferMap.get(uuid);
         if (Objects.isNull(buffer)) {
@@ -111,10 +109,10 @@ public class ConnectionHandler extends AbstractHandler {
         childChannel.write(writeBuffer);
         writeBuffer.clear();
         //建立异步连接
-        connect(host, port, attr.getUuid(), childChannel);
+        connect(host, port, uuid, childChannel);
 
         //更换附件
-        DeliverHandler deliverHandler = new DeliverHandler(attr, key, childChannel);
+        DeliverHandler deliverHandler = new DeliverHandler(key, childChannel,uuid);
         key.attach(deliverHandler);
         LOGGER.info("连接成功 {}", uuid);
     }

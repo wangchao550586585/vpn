@@ -2,7 +2,6 @@ package org.example.handler;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.example.entity.Attr;
 import org.example.entity.Resource;
 
 import java.io.IOException;
@@ -16,18 +15,17 @@ public abstract class AbstractHandler implements Runnable {
     protected final Logger LOGGER = LogManager.getLogger(this.getClass());
     protected static Map<String, ByteBuffer> byteBufferMap = new ConcurrentHashMap<String, ByteBuffer>();
     protected static Map<String, Resource> channelMap = new ConcurrentHashMap<String, Resource>();
-    protected final Attr attr;
     protected final SelectionKey key;
     protected final SocketChannel childChannel;
+    protected final String uuid;
 
-    public AbstractHandler(Attr attr, SelectionKey key, SocketChannel childChannel) {
-        this.attr = attr;
+    public AbstractHandler( SelectionKey key, SocketChannel childChannel,String uuid) {
         this.key = key;
         this.childChannel = childChannel;
+        this.uuid=uuid;
     }
 
     public void closeChildChannel() {
-        String uuid = attr.getUuid();
         byteBufferMap.remove(uuid);
         try {
             childChannel.close();
@@ -48,7 +46,7 @@ public abstract class AbstractHandler implements Runnable {
         buffer.flip();
     }
 
-    public Attr getAttr() {
-        return attr;
+    public String uuid() {
+        return uuid;
     }
 }

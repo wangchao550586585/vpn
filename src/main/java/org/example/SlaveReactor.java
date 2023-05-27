@@ -2,7 +2,6 @@ package org.example;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.example.entity.Attr;
 import org.example.handler.AbstractHandler;
 import org.example.handler.AuthHandler;
 import org.example.util.UnsafeHelper;
@@ -200,7 +199,7 @@ public class SlaveReactor implements Runnable {
         //主动调用cancel，close chanle，close selector会key失效
         if (!key.isValid()) {
             AbstractHandler handler = (AbstractHandler) key.attachment();
-            String uuid = handler.getAttr().getUuid();
+            String uuid = handler.uuid();
             LOGGER.error("key was invalid {}", uuid);
             handler.closeChildChannel();//这里会取消key
             return;
@@ -218,8 +217,7 @@ public class SlaveReactor implements Runnable {
                 //select和register会造成阻塞
                 SelectionKey selectionKey = childChannel.register(unwrappedSelector, 0);
                 String uuid = UUID.randomUUID().toString().replaceAll("-", "");
-                Attr attr = new Attr().uuid(uuid);
-                AuthHandler authHandler = new AuthHandler(attr, selectionKey, childChannel);
+                AuthHandler authHandler = new AuthHandler(selectionKey, childChannel,uuid);
                 selectionKey.attach(authHandler);
                 selectionKey.interestOps(SelectionKey.OP_READ);
                 LOGGER.info("slaveReactor register childChannel success {}", uuid);
