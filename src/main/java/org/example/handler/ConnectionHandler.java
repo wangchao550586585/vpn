@@ -1,6 +1,7 @@
 package org.example.handler;
 
 import org.example.CompositeByteBuf;
+import org.example.entity.ChannelWrapped;
 import org.example.entity.Resource;
 import org.example.util.Utils;
 
@@ -14,13 +15,14 @@ import java.nio.channels.SocketChannel;
 import java.util.*;
 
 public class ConnectionHandler extends AbstractHandler {
-    public ConnectionHandler(SelectionKey key, SocketChannel childChannel, String uuid, CompositeByteBuf cumulation) {
-        super(key, childChannel, uuid);
-        super.cumulation = cumulation;
+    public ConnectionHandler(ChannelWrapped channelWrapped) {
+        super(channelWrapped);
     }
 
     public void exec() throws IOException {
         ByteBuffer writeBuffer = ByteBuffer.allocate(4096 * 5);
+        CompositeByteBuf cumulation = channelWrapped.cumulation();
+        String uuid = channelWrapped.uuid();
         int len = cumulation.remaining();
         //协议最少5位
         if (len < 5) {
@@ -44,6 +46,7 @@ public class ConnectionHandler extends AbstractHandler {
         byte ATYP = cumulation.get();
         String host = null;
         Integer port = 0;
+        SocketChannel channel = channelWrapped.channel();
         if (0x01 == ATYP) {//IPV4
             if (cumulation.remaining() + 1 < 6) {
                 cumulation.reset();
@@ -53,7 +56,7 @@ public class ConnectionHandler extends AbstractHandler {
             host = Utils.byteToInt(cumulation.get()) + "." + Utils.byteToInt(cumulation.get()) + "." + Utils.byteToInt(cumulation.get()) + "." + Utils.byteToInt(cumulation.get());
             port = Utils.byteToInt(cumulation.get()) * 256 + Utils.byteToInt(cumulation.get());
 
-            LOGGER.info("IPV4 host:{}  port:{}  remoteAddress:{} {}", host, port, childChannel.getRemoteAddress(), uuid);
+            LOGGER.info("IPV4 host:{}  port:{}  remoteAddress:{} {}", host, port, channel.getRemoteAddress(), uuid);
         } else if (0x03 == ATYP) {//域名
             byte hostnameSize = cumulation.get();
             if (cumulation.remaining() < hostnameSize) {
@@ -68,7 +71,7 @@ public class ConnectionHandler extends AbstractHandler {
             host = Utils.byteToAscii(b);
             //按照大端
             port = Utils.byteToInt(cumulation.get()) * 256 + Utils.byteToInt(cumulation.get());
-            LOGGER.info("IPV4 host:{}  port:{}  remoteAddress:{} {}", host, port, childChannel.getRemoteAddress(), uuid);
+            LOGGER.info("IPV4 host:{}  port:{}  remoteAddress:{} {}", host, port, channel.getRemoteAddress(), uuid);
         } else if (0x04 == ATYP) {//IPV6
             LOGGER.warn("不支持IPV6访问 {}", uuid);
             closeChildChannel();
@@ -80,7 +83,6 @@ public class ConnectionHandler extends AbstractHandler {
         }
         //说明正常读取结束，切换为写模式。
         cumulation.clear();
-
         writeBuffer.put((byte) 5);
         writeBuffer.put((byte) 0);
         writeBuffer.put((byte) 0);
@@ -91,14 +93,14 @@ public class ConnectionHandler extends AbstractHandler {
         //put port
         writeBuffer.put(new byte[]{0, 0});
         writeBuffer.flip();
-        childChannel.write(writeBuffer);
+        channel.write(writeBuffer);
         writeBuffer.clear();
         //建立异步连接
-        boolean connectSuccess = connect(host, port, uuid, childChannel);
+        boolean connectSuccess = connect(host, port, uuid, channel);
         if (connectSuccess) {
             //更换附件
-            DeliverHandler deliverHandler = new DeliverHandler(key, childChannel, uuid, cumulation);
-            key.attach(deliverHandler);
+            DeliverHandler deliverHandler = new DeliverHandler(channelWrapped);
+            channelWrapped.key().attach(deliverHandler);
         } else {
             closeChildChannel();
         }

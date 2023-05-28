@@ -2,6 +2,7 @@ package org.example;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.example.entity.ChannelWrapped;
 import org.example.handler.AbstractHandler;
 import org.example.handler.AuthHandler;
 import org.example.util.UnsafeHelper;
@@ -216,11 +217,10 @@ public class SlaveReactor implements Runnable {
                 childChannel.configureBlocking(false);
                 //select和register会造成阻塞
                 SelectionKey selectionKey = childChannel.register(unwrappedSelector, 0);
-                String uuid = UUID.randomUUID().toString().replaceAll("-", "");
-                AuthHandler authHandler = new AuthHandler(selectionKey, childChannel,uuid);
+                AuthHandler authHandler = new AuthHandler(ChannelWrapped.builder().key(selectionKey).channel(childChannel));
                 selectionKey.attach(authHandler);
                 selectionKey.interestOps(SelectionKey.OP_READ);
-                LOGGER.info("slaveReactor register childChannel success {}", uuid);
+                LOGGER.info("slaveReactor register childChannel success {}", authHandler.uuid());
             } catch (IOException e) {
                 LOGGER.error("slaveReactor register childChannel fail ", e);
                 throw new RuntimeException(e);

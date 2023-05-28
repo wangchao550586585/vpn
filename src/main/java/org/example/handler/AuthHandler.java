@@ -1,17 +1,22 @@
 package org.example.handler;
 
+import org.example.CompositeByteBuf;
+import org.example.entity.ChannelWrapped;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
 public class AuthHandler extends AbstractHandler {
-    public AuthHandler(SelectionKey key, SocketChannel childChannel, String uuid) {
-        super(key, childChannel, uuid);
+    public AuthHandler(ChannelWrapped channelWrapped) {
+        super(channelWrapped);
     }
 
     public void exec() throws IOException {
         ByteBuffer writeBuffer = ByteBuffer.allocate(4096 * 5);
+        CompositeByteBuf cumulation = channelWrapped.cumulation();
+        String uuid = channelWrapped.uuid();
         byte VER;
         int len = cumulation.remaining();
         //auth协议最少有3位
@@ -40,11 +45,11 @@ public class AuthHandler extends AbstractHandler {
         writeBuffer.put((byte) 5);
         writeBuffer.put((byte) 0);
         writeBuffer.flip();
-        childChannel.write(writeBuffer);
+        channelWrapped.channel().write(writeBuffer);
         writeBuffer.clear();
         //更换附件
-        ConnectionHandler connectionHandler = new ConnectionHandler(key, childChannel, uuid, cumulation);
-        key.attach(connectionHandler);
+        ConnectionHandler connectionHandler = new ConnectionHandler(channelWrapped);
+        channelWrapped.key().attach(connectionHandler);
         LOGGER.info("鉴权成功 {}", uuid);
     }
 

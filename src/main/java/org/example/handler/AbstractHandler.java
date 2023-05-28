@@ -3,11 +3,11 @@ package org.example.handler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.example.CompositeByteBuf;
+import org.example.entity.ChannelWrapped;
 import org.example.entity.Resource;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Map;
 import java.util.Objects;
@@ -16,35 +16,29 @@ import java.util.concurrent.ConcurrentHashMap;
 public abstract class AbstractHandler implements Runnable {
     protected final Logger LOGGER = LogManager.getLogger(this.getClass());
     protected static Map<String, Resource> channelMap = new ConcurrentHashMap<String, Resource>();
-    protected final SelectionKey key;
-    protected final SocketChannel childChannel;
-    protected final String uuid;
-    protected CompositeByteBuf cumulation;
+    protected ChannelWrapped channelWrapped;
 
-    protected RecvByteBufAllocator recvByteBufAllocator;
-
-    public AbstractHandler(SelectionKey key, SocketChannel childChannel, String uuid) {
-        this.key = key;
-        this.childChannel = childChannel;
-        this.uuid = uuid;
-        this.recvByteBufAllocator = new RecvByteBufAllocator();
+    public AbstractHandler(ChannelWrapped channelWrapped) {
+        this.channelWrapped = channelWrapped;
     }
 
     public void closeChildChannel() {
         try {
-            childChannel.close();
+            channelWrapped.channel().close();
+            CompositeByteBuf cumulation = channelWrapped.cumulation();
             if (null != cumulation) {
                 cumulation.clear();
                 cumulation = null;
             }
             after();
         } catch (IOException e) {
-            LOGGER.error("close childChannel " + uuid, e);
+            LOGGER.error("close childChannel " + channelWrapped.uuid(), e);
             throw new RuntimeException(e);
         }
     }
 
     public void after() {
+        String uuid = channelWrapped.uuid();
         Resource resource = channelMap.get(uuid);
         if (Objects.isNull(resource)) {
             // 走到这里说明连接远端地址失败，因为他会关闭流，所以跳过即可。
@@ -60,18 +54,20 @@ public abstract class AbstractHandler implements Runnable {
     }
 
     public String uuid() {
-        return uuid;
+        return channelWrapped.uuid();
     }
 
     public void run() {
+        SocketChannel channel = channelWrapped.channel();
+        String uuid = channelWrapped.uuid();
         try {
             //1.获取分配器
-            RecvByteBufAllocator recvByteBufAllocator = recvBufAllocHandle();
+            RecvByteBufAllocator recvByteBufAllocator = channelWrapped.recvByteBufAllocator();
             do {
                 //2.分配byteBuff,记录读取数据数量到分配器中
                 ByteBuffer buffer = recvByteBufAllocator.allocate();
                 //3.读取数据，
-                int length = childChannel.read(buffer);
+                int length = channel.read(buffer);
                 recvByteBufAllocator.lastBytesRead(length);
                 //4.说明读取结束
                 if (length <= 0) {
@@ -102,18 +98,10 @@ public abstract class AbstractHandler implements Runnable {
         //粘包处理
         //1.获取累加的bytebuffer
         buffer.flip();
-        if (cumulation == null) {
-            cumulation = new CompositeByteBuf(buffer);
-        } else {
-            cumulation.composite(buffer);
-        }
+        channelWrapped.cumulation().composite(buffer);
         //2.将buffer数据存储到累加buffer中
         //3.执行exec方法
         exec();
-    }
-
-    private RecvByteBufAllocator recvBufAllocHandle() {
-        return recvByteBufAllocator;
     }
 
     protected abstract void exec() throws IOException;

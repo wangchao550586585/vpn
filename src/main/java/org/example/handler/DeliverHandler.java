@@ -1,6 +1,7 @@
 package org.example.handler;
 
 import org.example.CompositeByteBuf;
+import org.example.entity.ChannelWrapped;
 import org.example.entity.Resource;
 
 import java.io.IOException;
@@ -9,12 +10,13 @@ import java.nio.channels.SocketChannel;
 import java.util.Objects;
 
 public class DeliverHandler extends AbstractHandler {
-    public DeliverHandler(SelectionKey key, SocketChannel childChannel, String uuid, CompositeByteBuf cumulation) {
-        super(key, childChannel, uuid);
-        super.cumulation = cumulation;
+    public DeliverHandler(ChannelWrapped channelWrapped) {
+        super(channelWrapped);
     }
 
     public void exec() throws IOException {
+        CompositeByteBuf cumulation = channelWrapped.cumulation();
+        String uuid = channelWrapped.uuid();
         if (Objects.isNull(cumulation)) {
             LOGGER.warn("exception deliver get byte {}", uuid);
             return;
@@ -27,7 +29,7 @@ public class DeliverHandler extends AbstractHandler {
         }
         SocketChannel remoteClient = resource.remoteClient();
         //获取服务端数据
-        if (!childChannel.isOpen()) {
+        if (!channelWrapped.channel().isOpen()) {
             LOGGER.warn("channel 已经关闭 {}", uuid);
             return;
         }
