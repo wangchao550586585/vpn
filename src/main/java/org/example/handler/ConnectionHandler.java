@@ -94,26 +94,30 @@ public class ConnectionHandler extends AbstractHandler {
         childChannel.write(writeBuffer);
         writeBuffer.clear();
         //建立异步连接
-        connect(host, port, uuid, childChannel);
-
-        //更换附件
-        DeliverHandler deliverHandler = new DeliverHandler(key, childChannel, uuid, cumulation);
-        key.attach(deliverHandler);
+        boolean connectSuccess = connect(host, port, uuid, childChannel);
+        if (connectSuccess) {
+            //更换附件
+            DeliverHandler deliverHandler = new DeliverHandler(key, childChannel, uuid, cumulation);
+            key.attach(deliverHandler);
+        } else {
+            closeChildChannel();
+        }
     }
 
-    private void connect(final String host, final Integer port, final String uuid, SocketChannel childChannel) {
-        Selector selector;
+    private boolean connect(final String host, final Integer port, final String uuid, SocketChannel childChannel) {
+        Selector selector = null;
+        SocketChannel socketChannel = null;
         try {
-            SocketChannel socketChannel = SocketChannel.open();
+            socketChannel = SocketChannel.open();
             Timer timer = new Timer();
+            final SocketChannel finalSocketChannel = socketChannel;
             timer.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    if (socketChannel == null || !socketChannel.isConnected()) {
+                    if (finalSocketChannel == null || !finalSocketChannel.isConnected()) {
                         try {
-                            socketChannel.close();
+                            finalSocketChannel.close();
                             LOGGER.warn("remote connect timeout {}", uuid);
-                            closeChildChannel();
                         } catch (Exception e) {
                             LOGGER.error("remote connect fail , so close fail " + uuid, e);
                             throw new RuntimeException(e);
@@ -122,7 +126,7 @@ public class ConnectionHandler extends AbstractHandler {
                 }
             }, 300);
             socketChannel.connect(new InetSocketAddress(host, port));
-            LOGGER.info("remote connect success {}", uuid);
+            LOGGER.info("remote connect success {} remoteAddress {} ", uuid, socketChannel.getRemoteAddress());
             timer.cancel();
             socketChannel.configureBlocking(false);
             while (!socketChannel.finishConnect()) {
@@ -137,8 +141,22 @@ public class ConnectionHandler extends AbstractHandler {
             } else {
                 LOGGER.error("remote connect fail " + uuid, exception);
             }
+            if (null != socketChannel) {
+                try {
+                    socketChannel.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            if (null != selector) {
+                try {
+                    selector.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
             //这里不能往上抛异常
-            return;
+            return false;
         }
         Selector finalSelector = selector;
         Thread thread = new Thread(() -> {
@@ -191,10 +209,29 @@ public class ConnectionHandler extends AbstractHandler {
                     }
                 }
             } catch (Exception exception) {
+                closeChildChannel();
                 LOGGER.error("remote select fail " + uuid, exception);
                 throw new RuntimeException(exception);
             }
         });
         thread.start();
+        return true;
+    }
+
+    @Override
+    public void after() {
+        Resource resource = channelMap.get(uuid);
+        if (Objects.isNull(resource)) {
+            // 走到这里说明连接远端地址失败，因为他会关闭流，所以跳过即可。
+            LOGGER.warn("exception child  close {}", uuid);
+            return;
+        }
+        try {
+            resource.getRemoteClient().close();
+            resource.getSelector().close(); //close调用会调用wakeup
+            channelMap.remove(uuid);
+        } catch (IOException e) {
+            LOGGER.error("child  close " + uuid, e);
+        }
     }
 }

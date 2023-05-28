@@ -77,7 +77,8 @@ public abstract class AbstractHandler implements Runnable {
             //4.通过本次读取数据数量，来判断下次读取数量
 
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            closeChildChannel();
+            LOGGER.error("childChannel read fail {} ",uuid);
         }
     }
 

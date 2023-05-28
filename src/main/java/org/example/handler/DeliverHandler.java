@@ -26,21 +26,13 @@ public class DeliverHandler extends AbstractHandler {
             return;
         }
         SocketChannel remoteClient = resource.getRemoteClient();
-        try {
-            //获取服务端数据
-            if (!childChannel.isOpen()) {
-                LOGGER.warn("channel 已经关闭 {}", uuid);
-                return;
-            }
-            cumulation.write(remoteClient);
-            LOGGER.info("child -> remote  end {}", uuid);
-        } catch (Exception exception) {
-            LOGGER.error("child  close " + uuid, exception);
-            remoteClient.close();
-            resource.getSelector().close();
-            closeChildChannel();
-            // TODO: 2023/5/26 这里不能往上抛异常
+        //获取服务端数据
+        if (!childChannel.isOpen()) {
+            LOGGER.warn("channel 已经关闭 {}", uuid);
+            return;
         }
+        cumulation.write(remoteClient);
+        LOGGER.info("child -> remote  end {}", uuid);
     }
 
     @Override
