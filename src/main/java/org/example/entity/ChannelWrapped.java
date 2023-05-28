@@ -16,7 +16,7 @@ public class ChannelWrapped {
 
     public ChannelWrapped() {
         this.uuid = UUID.randomUUID().toString().replaceAll("-", "");
-        this.recvByteBufAllocator = new RecvByteBufAllocator();
+        this.recvByteBufAllocator = new RecvByteBufAllocator(uuid);
         this.cumulation = new CompositeByteBuf();
     }
 

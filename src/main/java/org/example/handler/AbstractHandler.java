@@ -60,14 +60,17 @@ public abstract class AbstractHandler implements Runnable {
     public void run() {
         SocketChannel channel = channelWrapped.channel();
         String uuid = channelWrapped.uuid();
+        RecvByteBufAllocator recvByteBufAllocator = channelWrapped.recvByteBufAllocator();
+        //重置读取总数
+        recvByteBufAllocator.reset();
+        int length = -1;
         try {
             //1.获取分配器
-            RecvByteBufAllocator recvByteBufAllocator = channelWrapped.recvByteBufAllocator();
             do {
                 //2.分配byteBuff,记录读取数据数量到分配器中
                 ByteBuffer buffer = recvByteBufAllocator.allocate();
                 //3.读取数据，
-                int length = channel.read(buffer);
+                length = channel.read(buffer);
                 recvByteBufAllocator.lastBytesRead(length);
                 //4.说明读取结束
                 if (length <= 0) {
@@ -87,7 +90,9 @@ public abstract class AbstractHandler implements Runnable {
             } while (recvByteBufAllocator.maybeMoreDataSupplier());
             //如果buffer没装满则退出循环
             //4.通过本次读取数据数量，来判断下次读取数量
-
+            if (length > 0) {
+                recvByteBufAllocator.autoScaling();
+            }
         } catch (IOException e) {
             closeChildChannel();
             LOGGER.error("childChannel read fail {} ", uuid);
