@@ -1,22 +1,20 @@
 package org.example.entity;
 
-import java.nio.channels.SelectionKey;
+import java.io.IOException;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
 public class Resource {
     SocketChannel remoteClient;
-    Selector selector;
+    Selector remoteSelector;
 
-    //
     SocketChannel childChannel;
-    SelectionKey childSKey;
 
     private Resource self() {
         return this;
     }
 
-    public SocketChannel getRemoteClient() {
+    public SocketChannel remoteClient() {
         return remoteClient;
     }
 
@@ -34,21 +32,17 @@ public class Resource {
         return self();
     }
 
-    public Selector getSelector() {
-        return selector;
-    }
 
-    public Resource selector(Selector selector) {
-        this.selector = selector;
+    public Resource remoteSelector(Selector remoteSelector) {
+        this.remoteSelector = remoteSelector;
         return self();
     }
 
-    public SelectionKey childSKey() {
-        return childSKey;
+    public void closeRemote() throws IOException {
+        remoteClient.close();
+        //close调用会调用wakeup
+        remoteSelector.close();
+
     }
 
-    public Resource childSKey(SelectionKey childSKey) {
-        this.childSKey = childSKey;
-        return self();
-    }
 }

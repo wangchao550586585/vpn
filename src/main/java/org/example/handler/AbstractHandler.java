@@ -10,6 +10,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class AbstractHandler implements Runnable {
@@ -20,10 +21,13 @@ public abstract class AbstractHandler implements Runnable {
     protected final String uuid;
     protected CompositeByteBuf cumulation;
 
+    protected RecvByteBufAllocator recvByteBufAllocator;
+
     public AbstractHandler(SelectionKey key, SocketChannel childChannel, String uuid) {
         this.key = key;
         this.childChannel = childChannel;
         this.uuid = uuid;
+        this.recvByteBufAllocator = new RecvByteBufAllocator();
     }
 
     public void closeChildChannel() {
@@ -41,6 +45,18 @@ public abstract class AbstractHandler implements Runnable {
     }
 
     public void after() {
+        Resource resource = channelMap.get(uuid);
+        if (Objects.isNull(resource)) {
+            // 走到这里说明连接远端地址失败，因为他会关闭流，所以跳过即可。
+            LOGGER.warn("exception child  close {}", uuid);
+            return;
+        }
+        try {
+            resource.closeRemote();
+            channelMap.remove(uuid);
+        } catch (IOException e) {
+            LOGGER.error("child  close " + uuid, e);
+        }
     }
 
     public String uuid() {
@@ -78,7 +94,7 @@ public abstract class AbstractHandler implements Runnable {
 
         } catch (IOException e) {
             closeChildChannel();
-            LOGGER.error("childChannel read fail {} ",uuid);
+            LOGGER.error("childChannel read fail {} ", uuid);
         }
     }
 
@@ -97,7 +113,7 @@ public abstract class AbstractHandler implements Runnable {
     }
 
     private RecvByteBufAllocator recvBufAllocHandle() {
-        return new RecvByteBufAllocator();
+        return recvByteBufAllocator;
     }
 
     protected abstract void exec() throws IOException;

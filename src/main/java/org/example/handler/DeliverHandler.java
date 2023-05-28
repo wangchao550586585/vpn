@@ -25,7 +25,7 @@ public class DeliverHandler extends AbstractHandler {
             LOGGER.warn("exception child  close {}", uuid);
             return;
         }
-        SocketChannel remoteClient = resource.getRemoteClient();
+        SocketChannel remoteClient = resource.remoteClient();
         //获取服务端数据
         if (!childChannel.isOpen()) {
             LOGGER.warn("channel 已经关闭 {}", uuid);
@@ -35,20 +35,4 @@ public class DeliverHandler extends AbstractHandler {
         LOGGER.info("child -> remote  end {}", uuid);
     }
 
-    @Override
-    public void after() {
-        Resource resource = channelMap.get(uuid);
-        if (Objects.isNull(resource)) {
-            // 走到这里说明连接远端地址失败，因为他会关闭流，所以跳过即可。
-            LOGGER.warn("exception child  close {}", uuid);
-            return;
-        }
-        try {
-            resource.getRemoteClient().close();
-            resource.getSelector().close(); //close调用会调用wakeup
-            channelMap.remove(uuid);
-        } catch (IOException e) {
-            LOGGER.error("child  close " + uuid, e);
-        }
-    }
 }

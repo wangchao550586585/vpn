@@ -23,6 +23,9 @@ public class CompositeByteBuf {
         lastReadIndex = readIndex = 0;
     }
 
+    public CompositeByteBuf() {
+    }
+
     public void composite(ByteBuffer buffer) {
         buffers.add(buffer);
     }

@@ -105,12 +105,12 @@ public class ConnectionHandler extends AbstractHandler {
     }
 
     private boolean connect(final String host, final Integer port, final String uuid, SocketChannel childChannel) {
-        Selector selector = null;
-        SocketChannel socketChannel = null;
+        Selector remoteSelector = null;
+        SocketChannel remoteChannel = null;
         try {
-            socketChannel = SocketChannel.open();
+            remoteChannel = SocketChannel.open();
             Timer timer = new Timer();
-            final SocketChannel finalSocketChannel = socketChannel;
+            final SocketChannel finalSocketChannel = remoteChannel;
             timer.schedule(new TimerTask() {
                 @Override
                 public void run() {
@@ -125,15 +125,15 @@ public class ConnectionHandler extends AbstractHandler {
                     }
                 }
             }, 300);
-            socketChannel.connect(new InetSocketAddress(host, port));
-            LOGGER.info("remote connect success {} remoteAddress {} ", uuid, socketChannel.getRemoteAddress());
+            remoteChannel.connect(new InetSocketAddress(host, port));
+            LOGGER.info("remote connect success {} remoteAddress {} ", uuid, remoteChannel.getRemoteAddress());
             timer.cancel();
-            socketChannel.configureBlocking(false);
-            while (!socketChannel.finishConnect()) {
+            remoteChannel.configureBlocking(false);
+            while (!remoteChannel.finishConnect()) {
             }
-            selector = Selector.open();
-            socketChannel.register(selector, SelectionKey.OP_READ);
-            channelMap.put(uuid, new Resource().remoteClient(socketChannel).selector(selector).childChannel(childChannel).childSKey(key));
+            remoteSelector = Selector.open();
+            remoteChannel.register(remoteSelector, SelectionKey.OP_READ);
+            channelMap.put(uuid, new Resource().remoteClient(remoteChannel).remoteSelector(remoteSelector).childChannel(childChannel));
             LOGGER.info("remote register success {}", uuid);
         } catch (Exception exception) {
             if (exception instanceof AsynchronousCloseException) {
@@ -141,16 +141,16 @@ public class ConnectionHandler extends AbstractHandler {
             } else {
                 LOGGER.error("remote connect fail " + uuid, exception);
             }
-            if (null != socketChannel) {
+            if (null != remoteChannel) {
                 try {
-                    socketChannel.close();
+                    remoteChannel.close();
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
             }
-            if (null != selector) {
+            if (null != remoteSelector) {
                 try {
-                    selector.close();
+                    remoteSelector.close();
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -158,7 +158,7 @@ public class ConnectionHandler extends AbstractHandler {
             //这里不能往上抛异常
             return false;
         }
-        Selector finalSelector = selector;
+        Selector finalSelector = remoteSelector;
         Thread thread = new Thread(() -> {
             if (null == finalSelector) {
                 return;
@@ -218,20 +218,4 @@ public class ConnectionHandler extends AbstractHandler {
         return true;
     }
 
-    @Override
-    public void after() {
-        Resource resource = channelMap.get(uuid);
-        if (Objects.isNull(resource)) {
-            // 走到这里说明连接远端地址失败，因为他会关闭流，所以跳过即可。
-            LOGGER.warn("exception child  close {}", uuid);
-            return;
-        }
-        try {
-            resource.getRemoteClient().close();
-            resource.getSelector().close(); //close调用会调用wakeup
-            channelMap.remove(uuid);
-        } catch (IOException e) {
-            LOGGER.error("child  close " + uuid, e);
-        }
-    }
 }
