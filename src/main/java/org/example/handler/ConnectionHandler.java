@@ -1,17 +1,14 @@
 package org.example.handler;
 
 import org.example.CompositeByteBuf;
+import org.example.RemoteConnect;
 import org.example.entity.ChannelWrapped;
 import org.example.entity.Resource;
 import org.example.util.Utils;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.AsynchronousCloseException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.*;
 import java.util.*;
 
 public class ConnectionHandler extends AbstractHandler {
@@ -96,128 +93,13 @@ public class ConnectionHandler extends AbstractHandler {
         channel.write(writeBuffer);
         writeBuffer.clear();
         //建立异步连接
-        boolean connectSuccess = connect(host, port, uuid, channel);
-        if (connectSuccess) {
+        Resource resource = new RemoteConnect(host, port, uuid, channel,this).connect();
+        if (Objects.nonNull(resource)) {
             //更换附件
-            DeliverHandler deliverHandler = new DeliverHandler(channelWrapped);
+            DeliverHandler deliverHandler = new DeliverHandler(channelWrapped, resource);
             channelWrapped.key().attach(deliverHandler);
         } else {
             closeChildChannel();
         }
     }
-
-    private boolean connect(final String host, final Integer port, final String uuid, SocketChannel childChannel) {
-        Selector remoteSelector = null;
-        SocketChannel remoteChannel = null;
-        try {
-            remoteChannel = SocketChannel.open();
-            Timer timer = new Timer();
-            final SocketChannel finalSocketChannel = remoteChannel;
-            timer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    if (finalSocketChannel == null || !finalSocketChannel.isConnected()) {
-                        try {
-                            finalSocketChannel.close();
-                            LOGGER.warn("remote connect timeout {}", uuid);
-                        } catch (Exception e) {
-                            LOGGER.error("remote connect fail , so close fail " + uuid, e);
-                            throw new RuntimeException(e);
-                        }
-                    }
-                }
-            }, 300);
-            remoteChannel.connect(new InetSocketAddress(host, port));
-            LOGGER.info("remote connect success {} remoteAddress {} ", uuid, remoteChannel.getRemoteAddress());
-            timer.cancel();
-            remoteChannel.configureBlocking(false);
-            while (!remoteChannel.finishConnect()) {
-            }
-            remoteSelector = Selector.open();
-            remoteChannel.register(remoteSelector, SelectionKey.OP_READ);
-            channelMap.put(uuid, new Resource().remoteClient(remoteChannel).remoteSelector(remoteSelector).childChannel(childChannel));
-            LOGGER.info("remote register success {}", uuid);
-        } catch (Exception exception) {
-            if (exception instanceof AsynchronousCloseException) {
-                LOGGER.info("remote connect fail {}", uuid);
-            } else {
-                LOGGER.error("remote connect fail " + uuid, exception);
-            }
-            if (null != remoteChannel) {
-                try {
-                    remoteChannel.close();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            if (null != remoteSelector) {
-                try {
-                    remoteSelector.close();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            //这里不能往上抛异常
-            return false;
-        }
-        Selector finalSelector = remoteSelector;
-        Thread thread = new Thread(() -> {
-            if (null == finalSelector) {
-                return;
-            }
-            Resource resource = channelMap.get(uuid);
-            SocketChannel childChannel1 = resource.getChildChannel();
-            try {
-                while (true) {
-                    if (!finalSelector.isOpen()) {
-                        LOGGER.warn("elector 正常退出 {}", uuid);
-                        break;
-                    }
-                    int n = finalSelector.select();
-                    if (n == 0) {
-                        if (!finalSelector.isOpen()) {
-                            LOGGER.warn("elector 正常退出 {}", uuid);
-                            break;
-                        }
-                        continue;
-                    }
-                    if (n > 1) {
-                        LOGGER.warn("监听过多 {}", uuid);
-                    }
-                    Set<SelectionKey> selectionKeys = finalSelector.selectedKeys();
-                    Iterator<SelectionKey> iterator = selectionKeys.iterator();
-                    while (iterator.hasNext()) {
-                        SelectionKey selectionKey = iterator.next();
-                        iterator.remove();
-                        SocketChannel channel = (SocketChannel) selectionKey.channel();
-                        if (selectionKey.isReadable()) {
-                            ByteBuffer allocate = ByteBuffer.allocate(4096 * 5);
-                            int read = channel.read(allocate);
-                            if (read < 0) {
-                                LOGGER.info("remote read end {}", uuid);
-                                channel.close();
-                                finalSelector.close();
-                                closeChildChannel();
-                                break;
-                            }
-                            do {
-                                allocate.flip();
-                                childChannel1.write(allocate);
-                                allocate.clear();
-                            } while (channel.read(allocate) > 0);
-                            LOGGER.info("remote  -> child end {}", uuid);
-                            //这里不能直接通知远端刷，因为异步通知远端后，读事件执行结束。后面select时，因为channel数据还没被读取，会导致再次select出来。
-                        }
-                    }
-                }
-            } catch (Exception exception) {
-                closeChildChannel();
-                LOGGER.error("remote select fail " + uuid, exception);
-                throw new RuntimeException(exception);
-            }
-        });
-        thread.start();
-        return true;
-    }
-
 }

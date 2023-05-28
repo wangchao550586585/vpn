@@ -25,11 +25,7 @@ public abstract class AbstractHandler implements Runnable {
     public void closeChildChannel() {
         try {
             channelWrapped.channel().close();
-            CompositeByteBuf cumulation = channelWrapped.cumulation();
-            if (null != cumulation) {
-                cumulation.clear();
-                cumulation = null;
-            }
+            channelWrapped.cumulation().clear();
             after();
         } catch (IOException e) {
             LOGGER.error("close childChannel " + channelWrapped.uuid(), e);
@@ -38,19 +34,6 @@ public abstract class AbstractHandler implements Runnable {
     }
 
     public void after() {
-        String uuid = channelWrapped.uuid();
-        Resource resource = channelMap.get(uuid);
-        if (Objects.isNull(resource)) {
-            // 走到这里说明连接远端地址失败，因为他会关闭流，所以跳过即可。
-            LOGGER.warn("exception child  close {}", uuid);
-            return;
-        }
-        try {
-            resource.closeRemote();
-            channelMap.remove(uuid);
-        } catch (IOException e) {
-            LOGGER.error("child  close " + uuid, e);
-        }
     }
 
     public String uuid() {
