@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+//socks5 RFC doc https://www.quarkay.com/code/383/socks5-protocol-rfc-chinese-traslation
 public abstract class AbstractHandler implements Runnable {
     protected final Logger LOGGER = LogManager.getLogger(this.getClass());
     protected static Map<String, Resource> channelMap = new ConcurrentHashMap<String, Resource>();
