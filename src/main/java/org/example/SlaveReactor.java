@@ -3,8 +3,8 @@ package org.example;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.example.entity.ChannelWrapped;
-import org.example.handler.AbstractHandler;
-import org.example.handler.AuthHandler;
+import org.example.protocol.AbstractHandler;
+import org.example.protocol.http.HttpHandler;
 import org.example.util.UnsafeHelper;
 import org.example.util.Utils;
 import org.jctools.queues.atomic.MpscChunkedAtomicArrayQueue;
@@ -217,10 +217,12 @@ public class SlaveReactor implements Runnable {
                 childChannel.configureBlocking(false);
                 //select和register会造成阻塞
                 SelectionKey selectionKey = childChannel.register(unwrappedSelector, 0);
-                AuthHandler authHandler = new AuthHandler(ChannelWrapped.builder().key(selectionKey).channel(childChannel));
-                selectionKey.attach(authHandler);
+                ChannelWrapped channelWrapped = ChannelWrapped.builder().key(selectionKey).channel(childChannel);
+                //AbstractHandler handler = new AuthHandler(channelWrapped);
+                AbstractHandler handler = new HttpHandler(channelWrapped);
+                selectionKey.attach(handler);
                 selectionKey.interestOps(SelectionKey.OP_READ);
-                LOGGER.info("slaveReactor register childChannel success {}", authHandler.uuid());
+                LOGGER.info("slaveReactor register childChannel success {}", handler.uuid());
             } catch (IOException e) {
                 LOGGER.error("slaveReactor register childChannel fail ", e);
                 throw new RuntimeException(e);

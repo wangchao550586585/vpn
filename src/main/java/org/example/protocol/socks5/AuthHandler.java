@@ -1,12 +1,11 @@
-package org.example.handler;
+package org.example.protocol.socks5;
 
 import org.example.CompositeByteBuf;
 import org.example.entity.ChannelWrapped;
+import org.example.protocol.AbstractHandler;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
 
 public class AuthHandler extends AbstractHandler {
     public AuthHandler(ChannelWrapped channelWrapped) {

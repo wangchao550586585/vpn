@@ -3,9 +3,9 @@
 1. 主从Reactor
 2. 针对select和register死锁问题，通过异步任务解决。
 3. 优化selectkey，采用数组替换set，性能提高2%
-4. 支持自动伸缩缓冲区
+4. 支持自动伸缩缓冲区(借鉴jemalloc，和netty池化内存思想)
 5. 缓冲区对象池化（开发中）
-6. 实现http协议（开发中）
+6. 实现http协议
 7. 实现websocket协议（开发中）
 8. 实现tcp，udp。（开发中）
 

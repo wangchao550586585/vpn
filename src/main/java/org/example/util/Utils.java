@@ -61,6 +61,9 @@ public class Utils {
         }
     }
 
+    public static String byte2Ascii(byte b) {
+        return String.valueOf((char)byteToInt(b));
+    }
     public static int byteToInt(byte b) {
         return Integer.parseInt(byteToHex(b), 16);
     }

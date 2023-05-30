@@ -1,22 +1,17 @@
-package org.example.handler;
+package org.example.protocol;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.example.CompositeByteBuf;
 import org.example.entity.ChannelWrapped;
-import org.example.entity.Resource;
+import org.example.protocol.socks5.RecvByteBufAllocator;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
-//socks5 RFC doc https://www.quarkay.com/code/383/socks5-protocol-rfc-chinese-traslation
+//socks5 RFC doc https://www.quarkay.com/code/383/socks5-protocol-rfc-chinese-traslation  curl --socks5 127.0.0.1:1080 https://www.baidu.com
 public abstract class AbstractHandler implements Runnable {
     protected final Logger LOGGER = LogManager.getLogger(this.getClass());
-    protected static Map<String, Resource> channelMap = new ConcurrentHashMap<String, Resource>();
     protected ChannelWrapped channelWrapped;
 
     public AbstractHandler(ChannelWrapped channelWrapped) {

@@ -3,7 +3,7 @@ package org.example;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.example.entity.Resource;
-import org.example.handler.ConnectionHandler;
+import org.example.protocol.socks5.ConnectionHandler;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;

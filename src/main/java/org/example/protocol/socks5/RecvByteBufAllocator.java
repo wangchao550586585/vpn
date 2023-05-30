@@ -1,4 +1,4 @@
-package org.example.handler;
+package org.example.protocol.socks5;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
