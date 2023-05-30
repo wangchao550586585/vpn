@@ -6,6 +6,7 @@ import org.example.CompositeByteBuf;
 import sun.security.util.Length;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 
 public class RequestHeaders {
     protected static final Logger LOGGER = LogManager.getLogger(RequestHeaders.class);
@@ -19,28 +20,18 @@ public class RequestHeaders {
     private String cacheControl;
     private String userAgent;
 
-    /**
-     * 每一个头字段header field都由一个字段名field name
-     * 及随后的一个分号（":"）、
-     * 可选的前置空白、
-     * 一个字段值field value、
-     * 一个可选的结尾空白组成。
-     * 例子如下：Connection: keep-alive
-     * @param cumulation
-     * @return
-     */
     public static RequestHeaders parse(CompositeByteBuf cumulation) {
         RequestHeaders requestHeaders = new RequestHeaders();
         while (cumulation.remaining() > 0) {
             String requestLine = cumulation.readLine();
-            //说明读取结束，则关闭流
+            //说明读取结束，则关闭流，连续读取到2个\r\n则退出
             if (requestLine.length() == 0) {
                 break;
             }
             String[] arr = requestLine.split(":");
             try {
                 String key = arr[0];
-                String value = arr[1].trim();
+                Object value = arr[1].trim();
                 int pre = key.indexOf("-");
                 if (pre > 0) {
                     String substring = key.substring(0, pre).toLowerCase();
@@ -50,11 +41,21 @@ public class RequestHeaders {
                     key = key.toLowerCase();
                 }
                 Field field = requestHeaders.getClass().getDeclaredField(key);
+                if (field.getType() != String.class) {
+                    Class<?> type = field.getType();
+                    value = type.getConstructor(String.class).newInstance(value);
+                }
                 field.setAccessible(true);
                 field.set(requestHeaders, value);
             } catch (NoSuchFieldException e) {
                 LOGGER.error("NoSuchFieldException {}: {}", arr[0], arr[1]);
             } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            } catch (InstantiationException e) {
+                throw new RuntimeException(e);
+            } catch (InvocationTargetException e) {
                 throw new RuntimeException(e);
             }
             LOGGER.info("{}: {}", arr[0], arr[1]);

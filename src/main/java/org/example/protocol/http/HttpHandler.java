@@ -5,12 +5,34 @@ import org.example.entity.ChannelWrapped;
 import org.example.protocol.AbstractHandler;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
-//  curl  http://127.0.0.1/index.jsp
+/**
+ * curl  http://127.0.0.1/index.jsp?name=%E5%BC%A0%E4%B8%89&value=10
+ * POST请求
+ * curl -H "Content-Type: application/json" -X POST -d '{"id": "001", "name":"张三", "phone":"13099999999"}'  http://127.0.0.1/index.jsp?name=%E5%BC%A0%E4%B8%89&value=10
+ *
+ * 请求行 request-line，开始于一个方法标识 method，
+ * 紧接着一个空白 SP，
+ * 然后是请求目标 request-target，
+ * 另一个空白 SP，
+ * 之后是协议版本 HTTP-version，
+ * 最后是回车换行符 CRLF。
+ * 服务器在等待接收和解析parse一个请求行 request-line 的时候，应当 忽略至少一个空行
+ * 例子如下：GET /index.jsp?name=%E5%BC%A0%E4%B8%89&value=10 HTTP/1.1
+ *
+ * status-line = HTTP-version SP status-code SP reason-phrase CRLF
+ * 协议版本 HTTP-version，一个空白 SP，状态码 status-code，另一个空白 SP，一个可能为空的文本短语 reason-phrase 来描述该状态码，最后是回车换行符 CRLF。
+ * reason-phrase 早期互联网交互，可省略。
+ * 例子如下：HTTP/1.1 200 OK
+ *
+ * 每一个头字段header field都由一个字段名field name
+ * 及随后的一个分号（":"）、
+ * 可选的前置空白、
+ * 一个字段值field value、
+ * 一个可选的结尾空白组成。
+ * 例子如下：Connection: keep-alive
+ */
 public class HttpHandler extends AbstractHandler {
     public HttpHandler(ChannelWrapped channelWrapped) {
         super(channelWrapped);
@@ -34,6 +56,7 @@ public class HttpHandler extends AbstractHandler {
     private Request getRequest() {
         String uuid = channelWrapped.uuid();
         CompositeByteBuf cumulation = channelWrapped.cumulation();
+        cumulation.print();
         //1:读取start line
         StartLine startLine = StartLine.parse(cumulation.readLine());
         LOGGER.info("startLine {} {} ", startLine, uuid);
@@ -52,12 +75,6 @@ public class HttpHandler extends AbstractHandler {
         String contentType = requestLine.getContentType();
         if (Objects.isNull(contentLength) || Objects.isNull(contentType)) {
         } else {
-            //紧接着2个\r\n
-            byte r = cumulation.get();
-            byte n = cumulation.get();
-            if (r != '\r' && n != '\n') {
-                return null;
-            }
             //3:读取请求体
             payload = cumulation.read(contentLength);
             LOGGER.info("payloads {} {}", payload, uuid);
@@ -82,26 +99,36 @@ public class HttpHandler extends AbstractHandler {
         return new Request(startLine, requestLine, payload, paramsMap);
     }
 
-    private void doPost(Request request) {
-
+    private void doPost(Request request) throws IOException {
+        if (request.getRequestHeaders().getContentType().contains("application/json")) {
+            //解析json
+            String requestBody = request.getRequestBody();
+            Response.builder()//构建状态行
+                    .httpVersion(request.getStartLine().getHttpVersion())
+                    .httpStatus(HttpStatus.OK)
+                    .date()  //构建响应头
+                    .connection(request.getRequestHeaders().getConnection())
+                    .contentLanguage("zh-CN")
+                    .contentType(request.getRequestHeaders().getContentType())
+                    .contentLength(requestBody.getBytes().length)
+                    .payload(requestBody)//构建响应体
+                    .write(channelWrapped.channel(), channelWrapped.uuid());
+        }
     }
 
     private void doGet(Request request) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        //构建状态行
-        buildStatusLine(sb, request.getStartLine());
-        //构建响应头
-        buildHeaderFields(sb, request.getRequestHeaders());
         //获取响应体
         String payload = buildPayload();
-        //仅当这个消息的请求方法被改变为 GET（【RFC7231】章节 4.3.1）的时候，这些头字段才有效
-        sb.append("Content-Length").append(": ").append(payload.getBytes().length).append("\r\n").append("\r\n");
-        sb.append(payload);
-        //在一个响应中是否会出现消息体，取决于请求方法所对应的响应是什么，且响应状态码是什么
-        LOGGER.info("response {} {} ", sb.toString(), channelWrapped.uuid());
-        ByteBuffer byteBuffer = putString(sb.toString());
-        byteBuffer.flip();
-        channelWrapped.channel().write(byteBuffer);
+        Response.builder()//构建状态行
+                .httpVersion(request.getStartLine().getHttpVersion())
+                .httpStatus(HttpStatus.OK)
+                .date()//构建响应头
+                .connection(request.getRequestHeaders().getConnection())
+                .contentLanguage("zh-CN")
+                .contentType("text/html;charset=utf-8")
+                .contentLength(payload.getBytes().length)
+                .payload(payload)//构建响应体
+                .write(channelWrapped.channel(), channelWrapped.uuid());
     }
 
     private String buildPayload() {
@@ -117,45 +144,4 @@ public class HttpHandler extends AbstractHandler {
         return payload.toString();
     }
 
-    private void buildHeaderFields(StringBuilder sb, RequestHeaders requestHeaders) {
-        Calendar cd = Calendar.getInstance();
-        SimpleDateFormat sdf = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss 'GMT'", Locale.CHINA);
-        sdf.setTimeZone(TimeZone.getTimeZone("GMT")); // 设置时区为GMT
-        String str = sdf.format(cd.getTime());
-        sb.append("Date").append(": ").append("Tue, 30 May 2023 02:51:46 GMT").append("\r\n");
-        Optional.ofNullable(requestHeaders.getConnection()).ifPresent(it -> {
-            sb.append("Connection").append(": ").append(it).append("\r\n");
-        });
-        sb.append("Content-Type").append(": ").append("text/html;charset=utf-8").append("\r\n");
-        sb.append("Content-Language").append(": ").append("zh-CN").append("\r\n");
-    }
-
-    /**
-     * status-line = HTTP-version SP status-code SP reason-phrase CRLF
-     * 协议版本 HTTP-version，一个空白 SP，状态码 status-code，另一个空白 SP，一个可能为空的文本短语 reason-phrase 来描述该状态码，最后是回车换行符 CRLF。
-     * reason-phrase 早期互联网交互，可省略。
-     * 例子如下：HTTP/1.1 200 OK
-     * 服务器在等待接收和解析parse一个请求行 request-line 的时候，应当 忽略至少一个空行
-     *
-     * @param sb
-     * @param startLine
-     */
-    private void buildStatusLine(StringBuilder sb, StartLine startLine) {
-        HttpStatus status = HttpStatus.OK;
-        sb.append(startLine.getHttpVersion())
-                .append(" ")
-                .append(status.getStatusCode())
-                .append(" ")
-                .append(status.getReasonPhrase())
-                .append("\r\n");
-    }
-
-    private ByteBuffer putString(String sb) {
-        byte[] bytes = sb.getBytes();
-        ByteBuffer writeBuffer = ByteBuffer.allocate(bytes.length);
-        for (int i = 0; i < bytes.length; i++) {
-            writeBuffer.put(bytes[i]);
-        }
-        return writeBuffer;
-    }
 }

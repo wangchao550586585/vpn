@@ -29,9 +29,9 @@ public class Utils {
         return output.toString();
     }
 
-    private static void nPrint(ByteBuffer allocate, String fix) {
+    public static void nPrint(ByteBuffer allocate, String fix) {
         if (allocate.remaining() > 0) {
-            byte[] bytes = Arrays.copyOfRange(allocate.array(), allocate.position(), allocate.remaining());
+            byte[] bytes = Arrays.copyOfRange(allocate.array(), allocate.position(), allocate.limit());
             String s = byteToAscii(bytes);
             System.out.println(fix + " " + s);
         }
@@ -43,11 +43,11 @@ public class Utils {
         }
         return output.toString();
     }
-    private static void nPrintByte(ByteBuffer allocate, String fix) {
+    public static void nPrintByte(ByteBuffer allocate, String fix) {
         if (allocate.remaining() > 0) {
             int size = allocate.remaining();
             String[] str = new String[size];
-            byte[] bytes = Arrays.copyOfRange(allocate.array(), allocate.position(), size);
+            byte[] bytes = Arrays.copyOfRange(allocate.array(), allocate.position(), allocate.limit());
             final String HEX = "0123456789abcdef";
             for (int i = 0; i < bytes.length; i++) {
                 StringBuilder sb = new StringBuilder(2);

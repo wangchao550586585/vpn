@@ -117,4 +117,11 @@ public class CompositeByteBuf {
         }
         return startLine.toString();
     }
+
+    public void print() {
+        for (int i = readIndex; i <buffers.size() ; i++) {
+            Utils.nPrint(buffers.get(readIndex),"nPrint");
+        }
+
+    }
 }

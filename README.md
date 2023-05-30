@@ -80,4 +80,10 @@ tlsv加密正常。
 8. 解决谷歌浏览器无法访问问题
 9. 针对select和register死锁问题，通过异步任务解决。
 10. 支持自动伸缩缓冲区
-      1. ![image-20230528180326988](/Users/a1/Library/Application Support/typora-user-images/image-20230528180326988.png)
+        1. ![image-20230528180326988](/Users/a1/Library/Application Support/typora-user-images/image-20230528180326988.png)
+11. 支持http请求
+       1. ![image-20230530151944482](/Users/a1/Library/Application Support/typora-user-images/image-20230530151944482.png)
+       2. ![image-20230530152024951](/Users/a1/Library/Application Support/typora-user-images/image-20230530152024951.png)
+       3. 对post请求的支持
+             1. ![image-20230530174144046](/Users/a1/Library/Application Support/typora-user-images/image-20230530174144046.png)
+             2. ![image-20230530174155652](/Users/a1/Library/Application Support/typora-user-images/image-20230530174155652.png)

@@ -15,18 +15,7 @@ public class StartLine {
         this.httpVersion = httpVersion;
     }
 
-    /**
-     * 请求行 request-line，开始于一个方法标识 method，
-     * 紧接着一个空白 SP，
-     * 然后是请求目标 request-target，
-     * 另一个空白 SP，
-     * 之后是协议版本 HTTP-version，
-     * 最后是回车换行符 CRLF。
-     * 例子如下：GET /index.jsp?name=%E5%BC%A0%E4%B8%89&value=10 HTTP/1.1
-     *
-     * @param readLine
-     * @return
-     */
+
     public static StartLine parse(String readLine) {
         String[] readLineArr = readLine.split(" ");
         String requestTarget;
