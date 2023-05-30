@@ -80,4 +80,9 @@ tlsv加密正常。
 8. 解决谷歌浏览器无法访问问题
 9. 针对select和register死锁问题，通过异步任务解决。
 10. 支持自动伸缩缓冲区
-      1. ![image-20230528180326988](/Users/a1/Library/Application Support/typora-user-images/image-20230528180326988.png)
+      1. <img width="896" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/08a2281a-e935-4377-b5c9-8d332b48ddcd">
+11. 支持http请求
+       1. <img width="903" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/4437b700-6260-4b65-a7c6-3cb3196121ec">
+
+       2. <img width="893" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/48fcfc69-2d7d-4bbb-a18b-09bf80230c40">
+
