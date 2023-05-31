@@ -51,9 +51,8 @@ public class ConnectionHandler extends AbstractHandler {
                 LOGGER.warn("数据包不完整 {}", uuid);
                 return;
             }
-            host = Utils.byteToInt(cumulation.get()) + "." + Utils.byteToInt(cumulation.get()) + "." + Utils.byteToInt(cumulation.get()) + "." + Utils.byteToInt(cumulation.get());
-            port = Utils.byteToInt(cumulation.get()) * 256 + Utils.byteToInt(cumulation.get());
-
+            host = Utils.byteToIntV2(cumulation.get()) + "." + Utils.byteToIntV2(cumulation.get()) + "." + Utils.byteToIntV2(cumulation.get()) + "." + Utils.byteToIntV2(cumulation.get());
+            port = (Utils.byteToIntV2(cumulation.get()) << 8) + Utils.byteToIntV2(cumulation.get());
             LOGGER.info("IPV4 host:{}  port:{}  remoteAddress:{} {}", host, port, channel.getRemoteAddress(), uuid);
         } else if (0x03 == ATYP) {//域名
             byte hostnameSize = cumulation.get();
@@ -66,9 +65,9 @@ public class ConnectionHandler extends AbstractHandler {
             for (int i = 0; i < hostnameSize; i++) {
                 b[i] = cumulation.get();
             }
-            host = Utils.byteToAscii(b);
+            host = new String(b, "utf-8");
             //按照大端
-            port = Utils.byteToInt(cumulation.get()) * 256 + Utils.byteToInt(cumulation.get());
+            port = Utils.byteToIntV2(cumulation.get()) * 256 + Utils.byteToIntV2(cumulation.get());
             LOGGER.info("IPV4 host:{}  port:{}  remoteAddress:{} {}", host, port, channel.getRemoteAddress(), uuid);
         } else if (0x04 == ATYP) {//IPV6
             LOGGER.warn("不支持IPV6访问 {}", uuid);

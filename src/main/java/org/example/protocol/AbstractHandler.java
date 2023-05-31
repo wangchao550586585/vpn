@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
-//socks5 RFC doc https://www.quarkay.com/code/383/socks5-protocol-rfc-chinese-traslation  curl --socks5 127.0.0.1:1080 https://www.baidu.com
 public abstract class AbstractHandler implements Runnable {
     protected final Logger LOGGER = LogManager.getLogger(this.getClass());
     protected ChannelWrapped channelWrapped;

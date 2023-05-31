@@ -7,6 +7,10 @@ import org.example.protocol.AbstractHandler;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+/**
+ * socks5 RFC doc https://www.quarkay.com/code/383/socks5-protocol-rfc-chinese-traslation
+ * curl --socks5 127.0.0.1:1080 https://www.baidu.com
+ */
 public class AuthHandler extends AbstractHandler {
     public AuthHandler(ChannelWrapped channelWrapped) {
         super(channelWrapped);

@@ -3,12 +3,10 @@ package org.example.protocol.http.entity;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.example.entity.CompositeByteBuf;
-import org.example.util.Utils;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * ------WebKitFormBoundarynPWPyRh984Z0DFpT
@@ -115,7 +113,7 @@ public class Multipart {
         String[] split1 = contentType.split(";");
         String boundary2 = split1[1].trim();
         String segmentation = "--" + boundary2.substring(boundary2.indexOf("=") + 1);
-        byte[] segmentationByte = Utils.string2Byte(segmentation);
+        byte[] segmentationByte = segmentation.getBytes();
         String boundary = cumulation.readLine();
         if (!boundary.equals(segmentation)) {
             LOGGER.info("协议格式不对，返回400");

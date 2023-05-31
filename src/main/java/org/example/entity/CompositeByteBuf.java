@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 import org.example.util.Utils;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
@@ -77,8 +78,8 @@ public class CompositeByteBuf {
     public void write(SocketChannel remoteClient) throws IOException {
         for (int i = readIndex; i < buffers.size(); i++) {
             ByteBuffer byteBuffer = buffers.get(i);
-            //nPrint(buffer, uuid + ": 写入远程服务器数据为：");
-            //nPrintByte(buffer, uuid + " child -> remote ：");
+            //printString(buffer, uuid + ": 写入远程服务器数据为：");
+            //printHex(buffer, uuid + " child -> remote ：");
             remoteClient.write(byteBuffer);
         }
         clearAll();
@@ -95,9 +96,11 @@ public class CompositeByteBuf {
      * @return
      */
     public String readLine() {
-        StringBuilder startLine = new StringBuilder();
         int remaining = remaining();
-        for (int i = 0; i < remaining; i++) {
+        ByteBuffer byteBuffer = buffers.get(readIndex);
+        int position = byteBuffer.position();
+        int i = 0;
+        for (; i < remaining; i++) {
             byte b = get();
             if (b == '\r') {
                 b = get();
@@ -105,29 +108,36 @@ public class CompositeByteBuf {
                     break;
                 }
             }
-            String s = Utils.byte2Ascii(b);
-            String s2 = Utils.byte2Ascii2(b);
-            // TODO: 2023/5/31  
-            //LOGGER.info("byte {} string1 {} string2 {} ",b,s,s2);
-            startLine.append(Utils.byte2Ascii(b));
         }
-        return startLine.toString();
+        byte[] bytes = new byte[i];
+        System.arraycopy(byteBuffer.array(), position, bytes, 0, i);
+        try {
+            return new String(bytes, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 
     public String read(int length) {
-        StringBuilder startLine = new StringBuilder();
+        byte[] bytes = new byte[length];
         for (int i = 0; i < length; i++) {
-            startLine.append(Utils.byte2Ascii(get()));
+            bytes[i] = get();
         }
-        return startLine.toString();
+        try {
+            return new String(bytes, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
+    /**
+     * 打印尚未读取的数据
+     */
     public void print() {
         for (int i = readIndex; i < buffers.size(); i++) {
-            Utils.nPrint(buffers.get(i), "nPrint");
+            Utils.printString(buffers.get(i), "nPrint");
         }
-
     }
 
     public void remove(int len) {
@@ -154,14 +164,7 @@ public class CompositeByteBuf {
      * @return
      */
     public String readAll() {
-        StringBuilder startLine = new StringBuilder();
-        int remaining = remaining();
-        for (int i = 0; i < remaining; i++) {
-            byte b = get();
-            String s2 = Utils.byte2Ascii2(b);
-            startLine.append(s2);
-        }
-        return startLine.toString();
+        return read(remaining());
     }
 
     /**
@@ -176,7 +179,7 @@ public class CompositeByteBuf {
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
-        }finally {
+        } finally {
             try {
                 fileChannel.close();
             } catch (IOException e) {
