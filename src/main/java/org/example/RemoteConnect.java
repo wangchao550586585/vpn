@@ -2,7 +2,7 @@ package org.example;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.example.entity.Resource;
+import org.example.protocol.socks5.entity.Resource;
 import org.example.protocol.socks5.ConnectionHandler;
 
 import java.io.IOException;

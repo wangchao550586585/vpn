@@ -1,6 +1,6 @@
 package org.example.protocol.socks5;
 
-import org.example.CompositeByteBuf;
+import org.example.entity.CompositeByteBuf;
 import org.example.entity.ChannelWrapped;
 import org.example.protocol.AbstractHandler;
 
