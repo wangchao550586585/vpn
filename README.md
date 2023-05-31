@@ -1,28 +1,43 @@
 # vpn
+
 # 进展
+
 1. 主从Reactor
 2. 针对select和register死锁问题，通过异步任务解决。
 3. 优化selectkey，采用数组替换set，性能提高2%
 4. 支持自动伸缩缓冲区(借鉴jemalloc，和netty池化内存思想)
 5. 缓冲区对象池化（开发中）
 6. 实现http协议
+   1. get请求支持
+      1. 获取图片支持
+   2. post请求支持
+      1. application/x-www-form-urlencoded支持
+      2. multipart/form-data支持
+      3. application/json支持
+      4. 上传文件支持
 7. 实现websocket协议（开发中）
 8. 实现tcp，udp。（开发中）
 
-# 浏览器支持
-## chrome
+# socks5
+
+## 浏览器支持
+
+### chrome
+
 首先开启socks5代理
 <img width="1291" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/1195e170-2eff-4ff0-baf7-af6a0406ad11">
 <img width="1355" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/dfcff39b-bcd5-4587-b29f-613ba1507693">
 可以正常访问
 <img width="985" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/02190f36-8e12-4bef-9248-cc21aeae1952">
-## safari
+
+### safari
+
 首先开启socks5代理
 <img width="805" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/0f597864-86a6-431d-8650-b374b84bbbb6">
 可以正常访问
 <img width="985" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/02190f36-8e12-4bef-9248-cc21aeae1952">
 
-# 调试
+#### 调试
 
 输入： curl --socks5 192.168.1.101:1080 https://www.baidu.com
 
@@ -33,7 +48,9 @@
 
 <img width="938" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/f2aacc8c-27a2-429d-9a5b-e6dbc581e652">
 
-## 查看socks5协议
+## wireshark抓包
+
+### 查看socks5协议
 
 一次收发
 
@@ -52,19 +69,82 @@
 
 至此协议升级完成，后面开始传输数据。
 
-## 查看https协议
+### 查看https协议
 
 tlsv加密正常。
 
 <img width="933" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/d22ec84b-23ca-4b4a-aaae-4d71ad2e5529">
 
-## 查看http协议
+### 查看http协议
 
 输入命令行：curl --socks5 192.168.1.101:1080 http://www.baidu.com 
 
 <img width="951" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/41322c3c-ee17-47ee-88ab-817ee433fe45">
 
-# 压测 todo
+## 压测 todo
+
+# http1.1
+
+## get请求支持
+
+<img width="1348" alt="image-20230531203044309" src="https://github.com/wangchao550586585/vpn/assets/21312820/f37083bd-cc5c-435d-a2b2-6b5cd1fcfd25">
+
+
+### 获取图片支持
+
+<img width="1291" alt="image-20230531203236172" src="https://github.com/wangchao550586585/vpn/assets/21312820/fd10148d-d304-418c-bafb-16feb744bd87">
+
+<img width="1183" alt="image-20230531203309520" src="https://github.com/wangchao550586585/vpn/assets/21312820/c4792a39-1b71-45ea-8f03-1080e7b8b28a">
+
+
+## post请求支持
+
+### application/json支持支持
+<img width="1290" alt="image-20230531203414016" src="https://github.com/wangchao550586585/vpn/assets/21312820/ecc8242c-ae13-4c6e-bf4d-f52c3daeda1d">
+<img width="1268" alt="image-20230531203715176" src="https://github.com/wangchao550586585/vpn/assets/21312820/937651ff-e7a4-4682-8c40-0d5356dfd2ca">
+<img width="1222" alt="image-20230531203439676" src="https://github.com/wangchao550586585/vpn/assets/21312820/5fe6018a-a264-4294-a22d-4b3ed8ad3c70">
+
+### application/x-www-form-urlencoded
+
+<img width="905" alt="image-20230531203903127" src="https://github.com/wangchao550586585/vpn/assets/21312820/81ad9347-08ef-4ba0-b550-48b7db658950">
+
+
+<img width="1258" alt="image-20230531203919260" src="https://github.com/wangchao550586585/vpn/assets/21312820/913b8fee-049a-498b-bfcc-07ba563b7dc2">
+
+
+<img width="1258" alt="image-20230531203927419" src="https://github.com/wangchao550586585/vpn/assets/21312820/c0bf8f4e-da75-46e3-922f-7004382c5006">
+
+
+### multipart/form-data支持(难点)
+
+这里做个简单的表单然后提交，提交后输入的key-value显示，txt文件显示，图片则上传到服务器，并且显示。
+<img width="1051" alt="image-20230531204012612" src="https://github.com/wangchao550586585/vpn/assets/21312820/c78495b5-bb09-491e-ac56-d80bc4c2534e">
+
+
+效果如下：
+
+<img width="630" alt="image-20230531204114114" src="https://github.com/wangchao550586585/vpn/assets/21312820/1f29c78a-0f43-43b3-937c-33f5a4eb6470">
+
+
+<img width="649" alt="image-20230531204121856" src="https://github.com/wangchao550586585/vpn/assets/21312820/373199d5-8f77-4cd3-912a-8854e4e8dd6d">
+
+
+<img width="1258" alt="image-20230531204215248" src="https://github.com/wangchao550586585/vpn/assets/21312820/3b337a16-e0ee-48aa-aa51-d132d2b0df7c">
+
+
+解析数据如下：
+
+<img width="662" alt="image-20230531204334652" src="https://github.com/wangchao550586585/vpn/assets/21312820/c531eef4-fe47-4ce4-a0e2-38145b22e0d2">
+
+
+这里封装了一个CompositeByteBuf类，该类主要是为了解决粘包的问题。
+
+上传的文件目录地址
+
+<img width="423" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/e6d513a7-6e62-42b4-b1ba-599265104ac7">
+
+
+### 上传文件支持
 
 # 特性
 
@@ -72,17 +152,16 @@ tlsv加密正常。
 2. 主从Reactor
 3. 针对select和register死锁问题，通过异步任务解决。
 4. 减少频繁wakeup操作
-      1. 可以看的到简单访问下，少了58次访问。
-            <img width="951" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/e4b3cbb6-de88-4f8f-9465-01b46fa6d0c6">
+   1. 可以看的到简单访问下，少了58次访问。
+      <img width="951" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/e4b3cbb6-de88-4f8f-9465-01b46fa6d0c6">
 5. 针对socks5协议的升级过程抽出3个方法。
 6. 集成log4j，并添加彩色打印。
 7. 优化selectkey，采用数组替换set，性能提高2%
 8. 解决谷歌浏览器无法访问问题
 9. 针对select和register死锁问题，通过异步任务解决。
 10. 支持自动伸缩缓冲区
-      1. <img width="896" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/08a2281a-e935-4377-b5c9-8d332b48ddcd">
+        1. <img width="896" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/08a2281a-e935-4377-b5c9-8d332b48ddcd">
 11. 支持http请求
-       1. <img width="903" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/4437b700-6260-4b65-a7c6-3cb3196121ec">
+          1. <img width="903" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/4437b700-6260-4b65-a7c6-3cb3196121ec">
 
-       2. <img width="893" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/48fcfc69-2d7d-4bbb-a18b-09bf80230c40">
-
+          2. <img width="893" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/48fcfc69-2d7d-4bbb-a18b-09bf80230c40">
