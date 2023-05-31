@@ -9,20 +9,21 @@
 7. 实现websocket协议（开发中）
 8. 实现tcp，udp。（开发中）
 
-# 浏览器支持
-## chrome
+# socks5
+## 浏览器支持
+### chrome
 首先开启socks5代理
 <img width="1291" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/1195e170-2eff-4ff0-baf7-af6a0406ad11">
 <img width="1355" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/dfcff39b-bcd5-4587-b29f-613ba1507693">
 可以正常访问
 <img width="985" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/02190f36-8e12-4bef-9248-cc21aeae1952">
-## safari
+### safari
 首先开启socks5代理
 <img width="805" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/0f597864-86a6-431d-8650-b374b84bbbb6">
 可以正常访问
 <img width="985" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/02190f36-8e12-4bef-9248-cc21aeae1952">
 
-# 调试
+## 调试
 
 输入： curl --socks5 192.168.1.101:1080 https://www.baidu.com
 
@@ -63,8 +64,8 @@ tlsv加密正常。
 输入命令行：curl --socks5 192.168.1.101:1080 http://www.baidu.com 
 
 <img width="951" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/41322c3c-ee17-47ee-88ab-817ee433fe45">
-
 # 压测 todo
+
 
 # 特性
 
@@ -87,3 +88,6 @@ tlsv加密正常。
        3. 对post请求的支持
              1. ![image-20230530174144046](/Users/a1/Library/Application Support/typora-user-images/image-20230530174144046.png)
              2. ![image-20230530174155652](/Users/a1/Library/Application Support/typora-user-images/image-20230530174155652.png)
+
+
+

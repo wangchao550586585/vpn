@@ -61,9 +61,29 @@ public class Utils {
         }
     }
 
+    /**
+     * 先将byte转成16进制数字
+     * 然后将16进制数字转成10进制数字
+     * 接着将10进制数字转成Ascii
+     * @param b
+     * @return
+     */
     public static String byte2Ascii(byte b) {
         return String.valueOf((char)byteToInt(b));
     }
+    public static String byte2Ascii2(byte b) {
+        return String.valueOf((char)byteToInt2(b));
+    }
+    public static int byteToInt2(byte b) {
+        return b & 0xFF;
+    }
+
+    /**
+     * 可以优化
+     * @param b
+     * @return
+     */
+    // TODO: 2023/5/31
     public static int byteToInt(byte b) {
         return Integer.parseInt(byteToHex(b), 16);
     }
@@ -74,6 +94,34 @@ public class Utils {
             hex = "0" + hex;
         }
         return hex;
+    }
+
+    // TODO: 2023/5/31 可以优化
+    /**
+     * 1.Ascii -> 10进制
+     * 2.10进制 -> 16进制
+     * 3.16进制 -> byte
+     *
+     * @param str
+     * @return
+     */
+    public static byte[] string2Byte(String str) {
+        byte[] b = new byte[str.length()];
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            b[i] = Utils.charToByte(c);
+        }
+        return b;
+    }
+    public static String asciiToHex(char c) {
+        String hex = Integer.toHexString(c);
+        if (hex.length() < 2) {
+            hex = "0" + hex;
+        }
+        return hex;
+    }
+    public static byte charToByte(char c) {
+        return (byte)Integer.parseInt(asciiToHex(c), 16);
     }
     public static int javaVersion() {
         String key = "java.specification.version";
