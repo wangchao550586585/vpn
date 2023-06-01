@@ -187,4 +187,13 @@ public class CompositeByteBuf {
             }
         }
     }
+
+    public byte[] binaryString() {
+        byte[] result = new byte[this.remaining() * 8];
+        for (int i = readIndex; i < buffers.size(); i++) {
+            byte[] dest = Utils.bytes2Binary(buffers.get(i));
+            System.arraycopy(dest, 0, result, 0, dest.length);
+        }
+        return result;
+    }
 }

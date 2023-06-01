@@ -14,6 +14,7 @@ public class Utils {
 
     /**
      * 将二进制数据转成字符串打印
+     *
      * @param allocate
      * @param fix
      */
@@ -31,6 +32,7 @@ public class Utils {
 
     /**
      * 将allocate转成十六进制打印
+     *
      * @param allocate
      * @param fix
      */
@@ -98,4 +100,143 @@ public class Utils {
         }
     }
 
+    /**
+     * ByteBuffer转成01显示
+     *
+     * @param byteBuffer
+     * @return
+     */
+    public static byte[] bytes2Binary(ByteBuffer byteBuffer) {
+        byte[] result = null;
+        if (byteBuffer.remaining() > 0) {
+            byte[] bytes = Arrays.copyOfRange(byteBuffer.array(), byteBuffer.position(), byteBuffer.limit());
+            result = bytes2Binary(bytes);
+        }
+        return result;
+    }
+
+    /**
+     * 字节转成01显示
+     *
+     * @param bytes
+     * @return
+     */
+    public static byte[] bytes2Binary(byte[] bytes) {
+        byte[] result = new byte[bytes.length * 8];
+        for (int i = 0; i < bytes.length; i++) {
+            byte[] dest = bytes2Binary(bytes[i]);
+            System.arraycopy(dest, 0, result, i * 8, 8);
+        }
+        return result;
+    }
+
+    /**
+     * 获取单个字节0101二进制显示。
+     *
+     * @param aByte
+     * @return
+     */
+    public static byte[] bytes2Binary(byte aByte) {
+        return new byte[]{(byte) ((aByte >> 7) & 0x1)
+                , (byte) ((aByte >> 6) & 0x1)
+                , (byte) ((aByte >> 5) & 0x1)
+                , (byte) ((aByte >> 4) & 0x1)
+                , (byte) ((aByte >> 3) & 0x1)
+                , (byte) ((aByte >> 2) & 0x1)
+                , (byte) ((aByte >> 1) & 0x1)
+                , (byte) (aByte & 0x1)
+        };
+    }
+    /**
+     * 01的bit数组转成字节数组
+     *
+     * @param payloadData
+     * @return
+     */
+    public static byte[] binary2Bytes(byte[] payloadData) {
+        byte[] result = new byte[payloadData.length / 8];
+        int r = 0;
+        byte[] bytes1 = new byte[8];
+        for (int i = 0; i < payloadData.length; i++) {
+            int i1 = i % 8;
+            if (i != 0 && i1 == 0) {
+                result[r++] = (byte) Utils.binary2Int(bytes1);
+            }
+            bytes1[i1] = payloadData[i];
+        }
+        result[r] = (byte) Utils.binary2Int(bytes1);
+        return result;
+    }
+
+    /**
+     * 01转成单个int
+     *
+     * @param bytes
+     * @return
+     */
+    public static int binary2Int(byte[] bytes) {
+        int result = 0;
+        int off = 0;
+        for (int i = bytes.length - 1; i >= 0; i--) {
+            result += (bytes[i] << off);
+            off++;
+        }
+        return result;
+    }
+
+    /**
+     * 打印01组成的数组
+     * 格式如下：
+     * 11100101 00111111 00100000 01110011
+     *
+     * @param frame
+     */
+    public static String printBinary(byte[] frame) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < frame.length; i++) {
+            if (i != 0 && (i % 8) == 0) {
+                sb.append(" ");
+            }
+            if (i != 0 && (i % 64) == 0) {
+                sb.append("\r\n");
+            }
+            sb.append(frame[i]);
+        }
+        return sb.toString();
+    }
+
+
+    /**
+     * 反掩码
+     * @param payloadData 01组成数组
+     * @param maskingKey 01组成数组
+     * @return
+     */
+    public static String unmask(byte[] payloadData, byte[] maskingKey) {
+        byte[] result = binary2Bytes(payloadData);
+        byte[] mask = binary2Bytes(maskingKey);
+        return new String(mask(result, mask));
+    }
+
+    /**
+     * 进行掩码
+     * original-octet-i：为原始数据的第i字节。
+     * transformed-octet-i：为转换后的数据的第i字节。
+     * j：为i mod 4的结果。
+     * masking-key-octet-j：为mask key第j字节。
+     * 算法描述为：
+     * original-octet-i与 masking-key-octet-j异或后，得到 transformed-octet-i。
+     * j = i MOD 4
+     * transformed-octet-i = original-octet-i XOR masking-key-octet-j
+     *
+     * @param payloadData 字节
+     * @param maskingKey  字节
+     * @return
+     */
+    public static byte[] mask(byte[] payloadData, byte[] maskingKey) {
+        for (int i = 0; i < payloadData.length; i++) {
+            payloadData[i] = (byte) (payloadData[i] ^ maskingKey[i % 4]);
+        }
+        return payloadData;
+    }
 }

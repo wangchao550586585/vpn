@@ -73,7 +73,7 @@ public abstract class AbstractHandler implements Runnable {
             }
         } catch (Exception e) {
             closeChildChannel();
-            LOGGER.error("childChannel read fail {} ", uuid);
+            LOGGER.error("childChannel read fail " + uuid, e);
         }
     }
 

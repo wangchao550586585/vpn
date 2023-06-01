@@ -57,6 +57,7 @@ public class WebsocketHandler extends HttpHandler {
      */
     @Override
     protected void doGet(Request request) throws Exception {
+        String uuid = channelWrapped.uuid();
         String httpVersion = request.getStartLine().getHttpVersion();
         float v = Float.parseFloat(httpVersion.split("/")[1]);
         if (v < 1.1) {
@@ -107,6 +108,8 @@ public class WebsocketHandler extends HttpHandler {
                 .write(channelWrapped.channel(), channelWrapped.uuid());
         Receive deliverHandler = new Receive(channelWrapped,request);
         channelWrapped.key().attach(deliverHandler);
+
+        LOGGER.info("websocket upgrade success {}",uuid);
     }
 
     /**
