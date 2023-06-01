@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="text/javascript">
+        var ws;
+
+        function WebSocketTest() {
+            ws = new WebSocket("ws://127.0.0.1/echo?name=哈哈&value=1111");
+            // 打开一个 web socket
+            ws.onopen = function () {
+                // Web Socket 已连接上，使用 send() 方法发送数据
+                ws.send("发送数据");
+            };
+
+            ws.onmessage = function (evt) {
+                var received_msg = evt.data;
+                let htmlObj = document.getElementById("received");
+                var li = document.createElement('li')
+                // 向li中添加文本内容
+                li.innerHTML = received_msg;
+                // 向指定div中插入li
+                htmlObj.appendChild(li);
+            };
+
+            ws.onclose = function () {
+                // 关闭 websocket
+            };
+        }
+
+        function webSocketSubmit() {
+            var content = document.getElementsByName("websocuetInput");
+            ws.send(content.value);
+        }
+    </script>
+</head>
+<body>
+<h1>测试application/x-www-form-urlencoded</h1>
+<form action="http://127.0.0.1/index.jsp" method="post">
+    <label for="fname">First name:</label><br>
+    <input type="text" id="fname" name="fname" value="Bill"><br>
+    <label for="lname">Last name:</label><br>
+    <input type="text" id="lname" name="lname" value="Gates"><br><br>
+    <input type="submit" value="Submit">
+</form>
+
+<h1>测试multipart/form-data</h1>
+<form action="http://127.0.0.1/index.jsp" method="post" enctype="multipart/form-data" accept-charset="UTF-8">
+    <label for="fname">First name:</label><br>
+    <input type="text" id="fname" name="fname" value="Bill"><br>
+    <label for="lname">Last name:</label><br>
+    <input type="text" id="lname" name="lname" value="Gates"><br><br>
+    <input type="file" name="upload1"/><br/>
+    <input type="file" name="upload2"/><br/>
+    <input type="submit" value="Submit">
+</form>
+
+<h1>测试websocket</h1>
+<div>
+    <a href="javascript:WebSocketTest()">运行 WebSocket</a>
+    <input type="text" id="websocuetInput"/><br/>
+    <button onclick="webSocketSubmit()"/>
+    <div id="received">
+    </div>
+</div>
+</body>
+</html>

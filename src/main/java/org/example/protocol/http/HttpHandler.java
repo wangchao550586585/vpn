@@ -84,15 +84,21 @@ public class HttpHandler extends AbstractHandler {
             doGet(request);
         } else if (method.equals("POST")) {
             doPost(request);
+        }else{
+            otherMethod(request);
         }
         channelWrapped.cumulation().clearAll();
     }
 
-    private Request getRequest() {
+    protected void otherMethod(Request request) {
+
+    }
+
+    protected Request getRequest() {
         String uuid = channelWrapped.uuid();
         CompositeByteBuf cumulation = channelWrapped.cumulation();
         cumulation.mark();
-        //cumulation.print();
+        cumulation.print();
         //1:读取start line
         StartLine startLine = StartLine.parse(cumulation.readLine());
         LOGGER.info("startLine {} {} ", startLine, uuid);
@@ -163,7 +169,7 @@ public class HttpHandler extends AbstractHandler {
         return paramsMap;
     }
 
-    private void doPost(Request request) throws IOException {
+    protected void doPost(Request request) throws IOException {
         if (request.getRequestHeaders().getContentType().contains("application/json")) {
             //解析json
             String requestBody = request.getRequestBody();
@@ -240,7 +246,7 @@ public class HttpHandler extends AbstractHandler {
         }
     }
 
-    private void doGet(Request request) throws IOException {
+    protected void doGet(Request request) throws IOException {
         //说明访问的是一个静态资源
         String requestTarget = request.getStartLine().getRequestTarget();
         if (requestTarget.contains("/favicon.ico")) {

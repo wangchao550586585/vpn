@@ -26,6 +26,10 @@ public final class Response {
     private byte[] payload;
     private FileChannel stream;
 
+    /**
+     * websocket支持
+     */
+    private String upgrade;
     static {
         df.setTimeZone(TimeZone.getTimeZone("GMT"));
     }
@@ -51,6 +55,13 @@ public final class Response {
         sb.append("Content-Language").append(": ").append(contentLanguage).append("\r\n");
         sb.append("Content-Type").append(": ").append(contentType).append("\r\n");
         sb.append("Content-Length").append(": ").append(contentLength).append("\r\n");
+
+        /**
+         * websocket支持
+         */
+        Optional.ofNullable(upgrade).ifPresent(it -> {
+            sb.append("Upgrade").append(": ").append(it).append("\r\n");
+        });
 
         //build requestBody
         sb.append("\r\n");
@@ -108,6 +119,15 @@ public final class Response {
 
     public Response stream(FileChannel channel) {
         this.stream = channel;
+        return self();
+    }
+
+    public String upgrade() {
+        return upgrade;
+    }
+
+    public Response upgrade(String upgrade) {
+        this.upgrade = upgrade;
         return self();
     }
 

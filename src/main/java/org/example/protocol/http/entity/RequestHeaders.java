@@ -1,7 +1,9 @@
 package org.example.protocol.http.entity;
 
+import com.sun.org.apache.xalan.internal.lib.Extensions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.net.Protocol;
 import org.example.entity.CompositeByteBuf;
 
 import java.lang.reflect.Field;
@@ -18,6 +20,17 @@ public class RequestHeaders {
     private String host;
     private String cacheControl;
     private String userAgent;
+    /**
+     * 如下websocket支持
+     */
+    private String upgrade;
+    private String secWebSocketKey;
+    private Integer secWebSocketVersion;
+    //包含了一个或者多个客户端希望使用的用逗号分隔的根据权重排序的子协议。
+    private String secWebSocketProtocol;
+    private String origin;
+    //表示客户端期望使用的协议级别的扩展
+    private String secWebSocketExtensions;
 
     public static RequestHeaders parse(CompositeByteBuf cumulation) {
         RequestHeaders requestHeaders = new RequestHeaders();
@@ -134,6 +147,54 @@ public class RequestHeaders {
         this.contentType = contentType;
     }
 
+    public String getUpgrade() {
+        return upgrade;
+    }
+
+    public void setUpgrade(String upgrade) {
+        this.upgrade = upgrade;
+    }
+
+    public String getSecWebSocketKey() {
+        return secWebSocketKey;
+    }
+
+    public void setSecWebSocketKey(String secWebSocketKey) {
+        this.secWebSocketKey = secWebSocketKey;
+    }
+
+    public Integer getSecWebSocketVersion() {
+        return secWebSocketVersion;
+    }
+
+    public void setSecWebSocketVersion(Integer secWebSocketVersion) {
+        this.secWebSocketVersion = secWebSocketVersion;
+    }
+
+    public String getSecWebSocketProtocol() {
+        return secWebSocketProtocol;
+    }
+
+    public void setSecWebSocketProtocol(String secWebSocketProtocol) {
+        this.secWebSocketProtocol = secWebSocketProtocol;
+    }
+
+    public String getOrigin() {
+        return origin;
+    }
+
+    public void setOrigin(String origin) {
+        this.origin = origin;
+    }
+
+    public String getSecWebSocketExtensions() {
+        return secWebSocketExtensions;
+    }
+
+    public void setSecWebSocketExtensions(String secWebSocketExtensions) {
+        this.secWebSocketExtensions = secWebSocketExtensions;
+    }
+
     @Override
     public String toString() {
         return "RequestHeaders{" +
@@ -146,6 +207,12 @@ public class RequestHeaders {
                 ", host='" + host + '\'' +
                 ", cacheControl='" + cacheControl + '\'' +
                 ", userAgent='" + userAgent + '\'' +
+                ", upgrade='" + upgrade + '\'' +
+                ", secWebSocketKey='" + secWebSocketKey + '\'' +
+                ", secWebSocketVersion=" + secWebSocketVersion +
+                ", secWebSocketProtocol='" + secWebSocketProtocol + '\'' +
+                ", origin='" + origin + '\'' +
+                ", secWebSocketExtensions='" + secWebSocketExtensions + '\'' +
                 '}';
     }
 }
