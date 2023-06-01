@@ -70,7 +70,7 @@ public class HttpHandler extends AbstractHandler {
     }
 
     @Override
-    protected void exec() throws IOException {
+    protected void exec() throws Exception {
         Request request = getRequest();
         if (Objects.isNull(request)) {
             return;
@@ -87,7 +87,8 @@ public class HttpHandler extends AbstractHandler {
         }else{
             otherMethod(request);
         }
-        channelWrapped.cumulation().clearAll();
+        //清除读取的数据
+        channelWrapped.cumulation().clear();
     }
 
     protected void otherMethod(Request request) {
@@ -246,7 +247,7 @@ public class HttpHandler extends AbstractHandler {
         }
     }
 
-    protected void doGet(Request request) throws IOException {
+    protected void doGet(Request request) throws Exception {
         //说明访问的是一个静态资源
         String requestTarget = request.getStartLine().getRequestTarget();
         if (requestTarget.contains("/favicon.ico")) {

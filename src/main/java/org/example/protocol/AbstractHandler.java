@@ -71,13 +71,13 @@ public abstract class AbstractHandler implements Runnable {
             if (length > 0) {
                 recvByteBufAllocator.autoScaling();
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             closeChildChannel();
             LOGGER.error("childChannel read fail {} ", uuid);
         }
     }
 
-    private void process(ByteBuffer buffer) throws IOException {
+    private void process(ByteBuffer buffer) throws Exception {
         //粘包处理
         //1.获取累加的bytebuffer
         buffer.flip();
@@ -87,5 +87,5 @@ public abstract class AbstractHandler implements Runnable {
         exec();
     }
 
-    protected abstract void exec() throws IOException;
+    protected abstract void exec() throws Exception;
 }

@@ -27,6 +27,11 @@
             ws.onclose = function () {
                 // 关闭 websocket
             };
+            ws.onerror = function () {
+                console.log('WebSocket error: ', event);
+                var label = document.getElementById("status-label");
+                label.innerHTML = "Error: " + event;
+            }
         }
 
         function webSocketSubmit() {
@@ -58,6 +63,7 @@
 
 <h1>测试websocket</h1>
 <div>
+    <label id="status-label">error:</label><br>
     <a href="javascript:WebSocketTest()">运行 WebSocket</a>
     <input type="text" id="websocuetInput"/><br/>
     <button onclick="webSocketSubmit()"/>

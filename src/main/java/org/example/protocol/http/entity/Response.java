@@ -30,6 +30,10 @@ public final class Response {
      * websocket支持
      */
     private String upgrade;
+    private String secWebSocketExtensions;
+    private String secWebSocketProtocol;
+    private String secWebSocketAccept;
+
     static {
         df.setTimeZone(TimeZone.getTimeZone("GMT"));
     }
@@ -53,8 +57,12 @@ public final class Response {
             sb.append("Connection").append(": ").append(it).append("\r\n");
         });
         sb.append("Content-Language").append(": ").append(contentLanguage).append("\r\n");
-        sb.append("Content-Type").append(": ").append(contentType).append("\r\n");
-        sb.append("Content-Length").append(": ").append(contentLength).append("\r\n");
+        Optional.ofNullable(contentType).ifPresent(it -> {
+            sb.append("Content-Type").append(": ").append(it).append("\r\n");
+        });
+        Optional.ofNullable(contentLength).ifPresent(it -> {
+            sb.append("Content-Length").append(": ").append(it).append("\r\n");
+        });
 
         /**
          * websocket支持
@@ -62,7 +70,15 @@ public final class Response {
         Optional.ofNullable(upgrade).ifPresent(it -> {
             sb.append("Upgrade").append(": ").append(it).append("\r\n");
         });
-
+        Optional.ofNullable(secWebSocketExtensions).ifPresent(it -> {
+            sb.append("Sec-WebSocket-Key").append(": ").append(it).append("\r\n");
+        });
+        Optional.ofNullable(secWebSocketProtocol).ifPresent(it -> {
+            sb.append("Sec-WebSocket-Protocol").append(": ").append(it).append("\r\n");
+        });
+        Optional.ofNullable(secWebSocketAccept).ifPresent(it -> {
+            sb.append("Sec-WebSocket-Accept").append(": ").append(it).append("\r\n");
+        });
         //build requestBody
         sb.append("\r\n");
         return sb.toString();
@@ -81,7 +97,6 @@ public final class Response {
         this.httpStatus = httpStatus;
         return self();
     }
-
 
     public Response date() {
         this.date = df.format(new Date());
@@ -113,21 +128,28 @@ public final class Response {
         return self();
     }
 
-    public Channel stream() {
-        return stream;
-    }
-
     public Response stream(FileChannel channel) {
         this.stream = channel;
         return self();
     }
 
-    public String upgrade() {
-        return upgrade;
-    }
-
     public Response upgrade(String upgrade) {
         this.upgrade = upgrade;
+        return self();
+    }
+
+    public Response secWebSocketExtensions(String secWebSocketExtensions) {
+        this.secWebSocketExtensions = secWebSocketExtensions;
+        return self();
+    }
+
+    public Response secWebSocketProtocol(String secWebSocketProtocol) {
+        this.secWebSocketProtocol = secWebSocketProtocol;
+        return self();
+    }
+
+    public Response secWebSocketAccept(String secWebSocketAccept) {
+        this.secWebSocketAccept = secWebSocketAccept;
         return self();
     }
 
@@ -144,9 +166,9 @@ public final class Response {
         //某些情况下并不保证数据能够全部完成传输，确切传输了多少字节的数据需要根据返回的值来进行判断。
         //例如：从一个非阻塞模式下的 SocketChannel 中输入数据就不能够一次性将数据全部传输过来，
         //或者将文件通道的数据传输给一个非阻塞模式下的 SocketChannel 不能一次性传输过去。
-        if (Objects.nonNull(stream)){
+        if (Objects.nonNull(stream)) {
             long transfered = 0;
-            while (transfered < stream.size()){
+            while (transfered < stream.size()) {
                 transfered += stream.transferTo(transfered, stream.size(), channel);
             }
             stream.close();
