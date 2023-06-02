@@ -96,7 +96,7 @@ public class DnsFrame {
         return txId;
     }
 
-    public DnsFrame setTxId(byte[] txId) {
+    public DnsFrame txid(byte[] txId) {
         this.txId = txId;
         length += txId.length;
         return self();
@@ -106,7 +106,7 @@ public class DnsFrame {
         return response;
     }
 
-    public DnsFrame setResponse(byte response) {
+    public DnsFrame response(byte response) {
         this.response = response;
         length++;
         return self();
@@ -116,7 +116,7 @@ public class DnsFrame {
         return opcode;
     }
 
-    public DnsFrame setOpcode(byte[] opcode) {
+    public DnsFrame opcode(byte[] opcode) {
         this.opcode = opcode;
         length += opcode.length;
         return self();
@@ -126,7 +126,7 @@ public class DnsFrame {
         return authoritativeAnswer;
     }
 
-    public DnsFrame setAuthoritativeAnswer(byte authoritativeAnswer) {
+    public DnsFrame authoritativeAnswer(byte authoritativeAnswer) {
         this.authoritativeAnswer = authoritativeAnswer;
         length++;
         return self();
@@ -136,7 +136,7 @@ public class DnsFrame {
         return truncated;
     }
 
-    public DnsFrame setTruncated(byte truncated) {
+    public DnsFrame truncated(byte truncated) {
         this.truncated = truncated;
         length++;
         return self();
@@ -146,7 +146,7 @@ public class DnsFrame {
         return recursionDesired;
     }
 
-    public DnsFrame setRecursionDesired(byte recursionDesired) {
+    public DnsFrame recursionDesired(byte recursionDesired) {
         this.recursionDesired = recursionDesired;
         length++;
         return self();
@@ -156,7 +156,7 @@ public class DnsFrame {
         return recursionAvailable;
     }
 
-    public DnsFrame setRecursionAvailable(byte recursionAvailable) {
+    public DnsFrame recursionAvailable(byte recursionAvailable) {
         this.recursionAvailable = recursionAvailable;
         length++;
         return self();
@@ -166,7 +166,7 @@ public class DnsFrame {
         return z;
     }
 
-    public DnsFrame setZ(byte[] z) {
+    public DnsFrame z (byte[] z) {
         this.z = z;
         length += z.length;
         return self();
@@ -176,7 +176,7 @@ public class DnsFrame {
         return rcode;
     }
 
-    public DnsFrame setRcode(byte[] rcode) {
+    public DnsFrame rcode(byte[] rcode) {
         this.rcode = rcode;
         length += rcode.length;
         return self();
@@ -186,7 +186,7 @@ public class DnsFrame {
         return questions;
     }
 
-    public DnsFrame setQuestions(byte[] questions) {
+    public DnsFrame questions(byte[] questions) {
         this.questions = questions;
         length += questions.length;
         return self();
@@ -196,7 +196,7 @@ public class DnsFrame {
         return answer;
     }
 
-    public DnsFrame setAnswer(byte[] answer) {
+    public DnsFrame answer(byte[] answer) {
         this.answer = answer;
         length += answer.length;
         return self();
@@ -206,7 +206,7 @@ public class DnsFrame {
         return authority;
     }
 
-    public DnsFrame setAuthority(byte[] authority) {
+    public DnsFrame authority(byte[] authority) {
         this.authority = authority;
         length += authority.length;
         return self();
@@ -216,7 +216,7 @@ public class DnsFrame {
         return additional;
     }
 
-    public DnsFrame setAdditional(byte[] additional) {
+    public DnsFrame additional(byte[] additional) {
         this.additional = additional;
         length += additional.length;
         return self();
@@ -226,7 +226,7 @@ public class DnsFrame {
         return name;
     }
 
-    public DnsFrame setName(byte[] name) {
+    public DnsFrame name(byte[] name) {
         this.name = name;
         length += name.length;
         return self();
@@ -236,7 +236,7 @@ public class DnsFrame {
         return type;
     }
 
-    public DnsFrame setType(byte[] type) {
+    public DnsFrame type(byte[] type) {
         this.type = type;
         length += type.length;
         return self();
@@ -246,7 +246,7 @@ public class DnsFrame {
         return _class;
     }
 
-    public DnsFrame set_class(byte[] _class) {
+    public DnsFrame _class(byte[] _class) {
         this._class = _class;
         length += _class.length;
         return self();
