@@ -170,7 +170,7 @@ public class Utils {
 
     /**
      * 01转成单个int
-     *
+     * 按照大端表示法
      * @param bytes
      * @return
      */
@@ -207,7 +207,7 @@ public class Utils {
 
 
     /**
-     * 反掩码
+     * 反掩码并编译成字符串
      * @param payloadData 01组成数组
      * @param maskingKey 01组成数组
      * @return
@@ -216,6 +216,18 @@ public class Utils {
         byte[] result = binary2Bytes(payloadData);
         byte[] mask = binary2Bytes(maskingKey);
         return new String(mask(result, mask));
+    }
+
+    /**
+     * 反掩码并编译成字节数组
+     * @param payloadData 01组成数组
+     * @param maskingKey 01组成数组
+     * @return
+     */
+    public static byte[] unmaskBytes(byte[] payloadData, byte[] maskingKey) {
+        byte[] result = binary2Bytes(payloadData);
+        byte[] mask = binary2Bytes(maskingKey);
+        return mask(result, mask);
     }
 
     /**
@@ -238,5 +250,17 @@ public class Utils {
             payloadData[i] = (byte) (payloadData[i] ^ maskingKey[i % 4]);
         }
         return payloadData;
+    }
+
+    public static byte[] buildStatusCode(int code) {
+        byte[] sendPayloadData;
+        int i = code / 256;
+        int i1 = code % 256;
+        byte[] bytes = Utils.bytes2Binary((byte) i);
+        byte[] bytes2 = Utils.bytes2Binary((byte) i1);
+        sendPayloadData = new byte[bytes.length + bytes2.length];
+        System.arraycopy(bytes, 0, sendPayloadData, 0, bytes.length);
+        System.arraycopy(bytes2, 0, sendPayloadData, bytes.length, bytes2.length);
+        return sendPayloadData;
     }
 }

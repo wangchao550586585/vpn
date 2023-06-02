@@ -5,38 +5,50 @@
     <title>Title</title>
     <script type="text/javascript">
         var ws;
-
         function WebSocketTest() {
             ws = new WebSocket("ws://127.0.0.1/echo?name=哈哈&value=1111");
             // 打开一个 web socket
             ws.onopen = function () {
-                // Web Socket 已连接上，使用 send() 方法发送数据
-                ws.send("发送数据");
+                print("连接成功");
+                ws.send("测试");
             };
 
             ws.onmessage = function (evt) {
-                var received_msg = evt.data;
-                let htmlObj = document.getElementById("received");
-                var li = document.createElement('li')
-                // 向li中添加文本内容
-                li.innerHTML = received_msg;
-                // 向指定div中插入li
-                htmlObj.appendChild(li);
+                var msg="receive: " + evt.data
+                print(msg);
             };
 
             ws.onclose = function () {
-                // 关闭 websocket
+                print("关闭连接");
             };
+
             ws.onerror = function () {
                 console.log('WebSocket error: ', event);
-                var label = document.getElementById("status-label");
+                var label = document.getElementById("error");
                 label.innerHTML = "Error: " + event;
             }
         }
 
+
         function webSocketSubmit() {
-            var content = document.getElementsByName("websocuetInput");
-            ws.send(content.value);
+            send(document.getElementById("input").value);
+        }
+
+        function webSocketClose() {
+            ws.close();
+        }
+
+        function sendPing() {
+            send("ping");
+        }
+        function send(data){
+            print("send: "+data)
+            ws.send(data);
+        }
+        function print(msg) {
+            var li = document.createElement('li')
+            li.innerHTML = msg;
+            document.getElementById("received").appendChild(li);
         }
     </script>
 </head>
@@ -63,11 +75,15 @@
 
 <h1>测试websocket</h1>
 <div>
-    <label id="status-label">error:</label><br>
-    <a href="javascript:WebSocketTest()">运行 WebSocket</a>
-    <input type="text" id="websocuetInput"/><br/>
-    <button onclick="webSocketSubmit()"/>
+    <label id="error">Error:</label><br>
+    <a href="javascript:WebSocketTest()">连接</a> <br/>
+    <input type="text" id="input"/>
+    <button onclick="webSocketSubmit()">发送</button>
+    <button onclick="sendPing()">发送ping</button>
+    <button onclick="webSocketClose()">关闭</button>
+    <br/>
     <div id="received">
+
     </div>
 </div>
 </body>

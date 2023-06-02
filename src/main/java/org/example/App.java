@@ -12,7 +12,7 @@ import java.util.*;
  * Hello world!
  */
 public class App {
-    protected final Logger LOGGER = LogManager.getLogger(this.getClass());
+    protected final static Logger LOGGER = LogManager.getLogger(App.class);
 
     public static void main(String[] args) {
         new App().vpnStart();
