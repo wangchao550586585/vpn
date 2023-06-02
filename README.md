@@ -5,9 +5,8 @@
 1. 主从Reactor
 2. 针对select和register死锁问题，通过异步任务解决。
 3. 优化selectkey，采用数组替换set，性能提高2%
-4. 支持自动伸缩缓冲区(借鉴jemalloc，和netty池化内存思想)
-5. 缓冲区对象池化（开发中）
-6. 实现http协议
+4. 支持自动伸缩缓冲区
+5. 实现http协议
    1. get请求支持
       1. 获取图片支持
    2. post请求支持
@@ -15,13 +14,15 @@
       2. multipart/form-data支持
       3. application/json支持
       4. 上传文件支持
-7. 实现websocket协议
+6. 实现websocket协议
     1. 支持接收UTF-8的文本数据
     2. 支持响应close事件
     3. 支持响应ping事件
     4. 支持发送pong事件
     5. 支持发送0~65535位以内数据。
-8. 实现tcp，udp。（开发中）
+7. 实现dns协议，基于udp协议。(开发中)
+8. 实现tcp，udp(尚未开发)
+9. 缓冲区对象池化（借鉴jemalloc，和netty池化内存思想)(尚未开发)
 
 # socks5
 

@@ -191,7 +191,7 @@ public class Utils {
      *
      * @param frame
      */
-    public static String printBinary(byte[] frame) {
+    public static String buildBinaryReadable(byte[] frame) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < frame.length; i++) {
             if (i != 0 && (i % 8) == 0) {

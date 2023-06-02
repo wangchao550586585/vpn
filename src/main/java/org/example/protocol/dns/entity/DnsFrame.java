@@ -268,15 +268,18 @@ public class DnsFrame {
      * @throws IOException
      */
     public ByteBuffer write(DatagramChannel channel, String uuid) throws IOException {
-        byte[] byteBuffer = build();
-        String s = Utils.printBinary(Utils.bytes2Binary(byteBuffer));
-        LOGGER.info(" response frame {} {} ", s, uuid);
-        channel.write(ByteBuffer.wrap(byteBuffer));
+        //发送数据
+        byte[] frame = build();
+        String frameBinary = Utils.buildBinaryReadable(Utils.bytes2Binary(frame));
+        LOGGER.info(" request frame {} {} ", frameBinary, uuid);
+        channel.write(ByteBuffer.wrap(frame));
+
+        //接收数据
         ByteBuffer rec = ByteBuffer.allocate(1024);
         int bytesRead = channel.read(rec);
         rec.flip();
-        Utils.printHex(rec, "哈哈");
-        LOGGER.info(" response frame {} {} ", this.toString(), uuid);
+        frameBinary = Utils.buildBinaryReadable(Utils.bytes2Binary(frame));
+        LOGGER.info(" response frame {} {} ", frameBinary, uuid);
         return rec;
     }
 

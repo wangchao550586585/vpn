@@ -209,7 +209,7 @@ public class Receive extends AbstractHandler {
 
     private WebsocketFrame parse(ChannelWrapped channelWrapped) {
         byte[] frame = channelWrapped.cumulation().binaryString();
-        String s = Utils.printBinary(frame);
+        String s = Utils.buildBinaryReadable(frame);
         LOGGER.info("receive frame {} {}", s, channelWrapped.uuid());
         //表示这是消息的最后一个片段。第一个片段也有可能是最后一个片段。
         int off = 0;
