@@ -103,8 +103,11 @@ public class WebsocketHandler extends HttpHandler {
                 .connection(connection)
                 //不是"websocket，那么客户端必须关闭连接。
                 .upgrade(upgrade)
+                //表示客户端期望使用的协议级别的扩展
                 .secWebSocketExtensions(secWebSocketExtensions)
+                //包含了一个或者多个客户端希望使用的用逗号分隔的根据权重排序的子协议。
                 .secWebSocketProtocol(secWebSocketProtocol)
+                //这里需要解码，解码规则为sha+base64
                 .secWebSocketAccept(getKey(secWebSocketKey))
                 .contentLanguage("zh-CN")
                 .write(channelWrapped.channel(), channelWrapped.uuid());

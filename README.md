@@ -15,7 +15,12 @@
       2. multipart/form-data支持
       3. application/json支持
       4. 上传文件支持
-7. 实现websocket协议（开发中）
+7. 实现websocket协议
+    1. 支持接收UTF-8的文本数据
+    2. 支持响应close事件
+    3. 支持响应ping事件
+    4. 支持发送pong事件
+    5. 支持发送0~65535位以内数据。
 8. 实现tcp，udp。（开发中）
 
 # socks5
@@ -145,6 +150,72 @@ tlsv加密正常。
 
 
 ### 上传文件支持
+
+
+# websocket
+
+## 协议升级过程
+
+![image-20230602133947084](/Users/a1/Library/Application Support/typora-user-images/image-20230602133947084.png)
+
+这里可以看到
+
+- 响应码是101
+- connection=Upgrade
+- upgrade=websocket
+- secWebSocketExtensions表示客户端期望使用的协议级别的扩展
+- secWebSocketProtocol表示客户端希望使用的用逗号分隔的根据权重排序的子协议。
+- secWebSocketKey返回解码之后的值，解码规则为sha+base64
+
+```java
+Response.builder()//构建状态行
+        .httpVersion(request.getStartLine().getHttpVersion())
+        //状态码101表示同意升级
+        .httpStatus(HttpStatus.UPGRADE)
+        .date()//构建响应头
+        //不包含"Upgrade"的值（该值不区分大小写），那么客户端必须关闭连接。
+        .connection(connection)
+        //不是"websocket，那么客户端必须关闭连接。
+        .upgrade(upgrade)
+        //表示客户端期望使用的协议级别的扩展
+        .secWebSocketExtensions(secWebSocketExtensions)
+        //包含了一个或者多个客户端希望使用的用逗号分隔的根据权重排序的子协议。
+        .secWebSocketProtocol(secWebSocketProtocol)
+        //这里需要解码，解码规则为sha+base64
+        .secWebSocketAccept(getKey(secWebSocketKey))
+        .contentLanguage("zh-CN")
+        .write(channelWrapped.channel(), channelWrapped.uuid());
+```
+
+## 发送数据过程
+
+发送数据不需要掩码，因为掩码作用主要是为了防止客户端攻击服务端。而服务端则没这个问题，所以明文就行。
+
+协议如下：
+
+![image-20230602134623081](/Users/a1/Library/Application Support/typora-user-images/image-20230602134623081.png)
+
+![image-20230602134707790](/Users/a1/Library/Application Support/typora-user-images/image-20230602134707790.png)
+
+按照如上格式解析协议数据就行了。
+
+![image-20230602134736905](/Users/a1/Library/Application Support/typora-user-images/image-20230602134736905.png)
+
+响应也同理。
+
+![image-20230602134833043](/Users/a1/Library/Application Support/typora-user-images/image-20230602134833043.png)
+
+## 关闭过程
+
+![image-20230602134951987](/Users/a1/Library/Application Support/typora-user-images/image-20230602134951987.png)
+
+通过js触发的close事件是没有响应体的。客户端触发的close事件服务端是需要回应的。我这里回应后并封装了code表示关闭状态。
+
+![image-20230602135212169](/Users/a1/Library/Application Support/typora-user-images/image-20230602135212169.png)
+
+常用的关闭状态码
+
+![image-20230602135341921](/Users/a1/Library/Application Support/typora-user-images/image-20230602135341921.png)
 
 # 特性
 

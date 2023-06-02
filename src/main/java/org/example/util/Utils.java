@@ -252,7 +252,13 @@ public class Utils {
         return payloadData;
     }
 
-    public static byte[] buildStatusCode(int code) {
+    /**
+     * int转成2字节，采用二进制显示
+     *
+     * @param code
+     * @return
+     */
+    public static byte[] int2BinaryA2Byte(int code) {
         byte[] sendPayloadData;
         int i = code / 256;
         int i1 = code % 256;
@@ -262,5 +268,19 @@ public class Utils {
         System.arraycopy(bytes, 0, sendPayloadData, 0, bytes.length);
         System.arraycopy(bytes2, 0, sendPayloadData, bytes.length, bytes2.length);
         return sendPayloadData;
+    }
+
+    /**
+     * copy: src -> desc
+     * src从索引0开始拷贝
+     * 从dest数组off下标位置，拷贝src数组的长度。
+     * @param off
+     * @param dest
+     * @param src
+     * @return
+     */
+    public static int copy(int off, byte[] dest, byte[] src) {
+        System.arraycopy(src, 0, dest, off, src.length);
+        return (off + src.length);
     }
 }

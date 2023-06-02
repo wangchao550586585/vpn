@@ -3,7 +3,7 @@ package org.example.protocol.websocket;
 import org.example.entity.ChannelWrapped;
 import org.example.protocol.AbstractHandler;
 import org.example.protocol.http.entity.Request;
-import org.example.protocol.websocket.entity.Frame;
+import org.example.protocol.websocket.entity.WebsocketFrame;
 import org.example.util.Utils;
 
 import java.util.Arrays;
@@ -47,7 +47,7 @@ public class Receive extends AbstractHandler {
         客户端如果收到了一个添加了掩码的帧，必须立即关闭连接。
         在这种情况下，它可以使用第7.4.1节定义的1002（协议错误）状态码。（*/
         String uuid = channelWrapped.uuid();
-        Frame frame = parse(channelWrapped);
+        WebsocketFrame frame = parse(channelWrapped);
         //协议错误，断开连接
         if (Objects.isNull(frame)) {
             closeChildChannel();
@@ -90,13 +90,13 @@ public class Receive extends AbstractHandler {
                     sendPayloadLen = Arrays.copyOfRange(sendPayloadLen, 1, sendPayloadLen.length);
                     //如果是126，那么接下来的2个bytes解释为16bit的无符号整形作为负载数据的长度。
                     //字节长度量以网络字节顺序表示
-                    payloadLenExtended = Utils.buildStatusCode(sendPayloadData.length);
+                    payloadLenExtended = Utils.int2BinaryA2Byte(sendPayloadData.length);
                 } else {
                     //如果是127，那么接下来的8个bytes解释为一个64bit的无符号整形（最高位的bit必须为0）作为负载数据的长度。
                     // TODO: 2023/6/1 超过65535太长了，用不着
                 }
                 sendPayloadData = Utils.bytes2Binary(sendPayloadData);
-                Frame.defaultFrame(Frame.OpcodeEnum.SEND_UTF, sendPayloadData, sendPayloadLen, payloadLenExtended, channelWrapped.channel(), channelWrapped.uuid());
+                WebsocketFrame.defaultFrame(WebsocketFrame.OpcodeEnum.SEND_UTF, sendPayloadData, sendPayloadLen, payloadLenExtended, channelWrapped.channel(), channelWrapped.uuid());
                 break;
             case 0x02:
                 //二进制帧
@@ -150,18 +150,18 @@ public class Receive extends AbstractHandler {
                     LOGGER.info("close websocket empty statusCode msg  {}", uuid);
                 }
                 //1000表示正常关闭
-                sendPayloadData = Utils.buildStatusCode(1000);
+                sendPayloadData = Utils.int2BinaryA2Byte(1000);
                 sendPayloadLen = Utils.bytes2Binary((byte) 2);
                 //这里len只有7位
                 sendPayloadLen = Arrays.copyOfRange(sendPayloadLen, 1, sendPayloadLen.length);
                 //响应关闭
-                Frame.defaultFrame(Frame.OpcodeEnum.CLOSE, sendPayloadData, sendPayloadLen, null, channelWrapped.channel(), channelWrapped.uuid());
+                WebsocketFrame.defaultFrame(WebsocketFrame.OpcodeEnum.CLOSE, sendPayloadData, sendPayloadLen, null, channelWrapped.channel(), channelWrapped.uuid());
                 break;
             case 0x09:
                 /**
                  * 如果收到了一个心跳Ping帧，那么终端必须发送一个心跳Pong 帧作为回应，除非已经收到了一个关闭帧。终端应该尽快回复Pong帧。
                  */
-                Frame.defaultFrame(Frame.OpcodeEnum.PONG, null, null, null, channelWrapped.channel(), channelWrapped.uuid());
+                WebsocketFrame.defaultFrame(WebsocketFrame.OpcodeEnum.PONG, null, null, null, channelWrapped.channel(), channelWrapped.uuid());
                 break;
             case 0x10:
                 /**
@@ -170,7 +170,7 @@ public class Receive extends AbstractHandler {
                  * Pong帧可以被主动发送。这会作为一个单向的心跳。预期外的Pong包的响应没有规定。
                  */
                 //不需要实现
-                Frame.defaultFrame(Frame.OpcodeEnum.PING, null, null, null, channelWrapped.channel(), channelWrapped.uuid());
+                WebsocketFrame.defaultFrame(WebsocketFrame.OpcodeEnum.PING, null, null, null, channelWrapped.channel(), channelWrapped.uuid());
                 break;
             default:
                 break;
@@ -207,7 +207,7 @@ public class Receive extends AbstractHandler {
         return msg;
     }
 
-    private Frame parse(ChannelWrapped channelWrapped) {
+    private WebsocketFrame parse(ChannelWrapped channelWrapped) {
         byte[] frame = channelWrapped.cumulation().binaryString();
         String s = Utils.printBinary(frame);
         LOGGER.info("receive frame {} {}", s, channelWrapped.uuid());
@@ -267,7 +267,7 @@ public class Receive extends AbstractHandler {
         //“有效负载数据”是指“扩展数据”和“应用数据”。
         byte[] payloadData = Arrays.copyOfRange(frame, off, (off + payloadLen * 8));
         off += payloadLen * 8;
-        return Frame.builder()
+        return WebsocketFrame.builder()
                 .fin(fin)
                 .rsv(rsv)
                 .opcode(opcode)

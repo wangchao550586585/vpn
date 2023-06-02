@@ -9,8 +9,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.Objects;
-
-public class Frame {
+import static org.example.util.Utils.copy;
+public class WebsocketFrame {
     protected final Logger LOGGER = LogManager.getLogger(this.getClass());
 
     public enum OpcodeEnum {
@@ -50,12 +50,12 @@ public class Frame {
     private final static byte DEFAULT_MASK = 0x00;
     private final static byte[] DEFAULT_PAYLOAD_LEN = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-    public static Frame builder() {
-        return new Frame();
+    public static WebsocketFrame builder() {
+        return new WebsocketFrame();
     }
 
     public static void defaultFrame(OpcodeEnum opcode, byte[] payloadData, byte[] payloadLen, byte[] payloadLenExtended, SocketChannel channel, String uuid) throws IOException {
-        Frame.builder()//构建状态行
+        WebsocketFrame.builder()//构建状态行
                 .fin(DEFAULT_FIN)//最后一个包含数据的帧的 FIN （ FIN 帧）字段必须设置为 1 。
                 .rsv(DEFAULT_RSV)//固定
                 .opcode(opcode.send())  //构建响应头
@@ -86,42 +86,35 @@ public class Frame {
         return Utils.binary2Bytes(bytes);
     }
 
-    private int copy(int off, byte[] bytes, byte[] target) {
-        for (int i = 0; i < target.length; i++) {
-            bytes[off++] = target[i];
-        }
-        return off;
-    }
-
-    private Frame self() {
+    private WebsocketFrame self() {
         return this;
     }
 
-    public Frame fin(byte fin) {
+    public WebsocketFrame fin(byte fin) {
         this.fin = fin;
         length += 1;
         return self();
     }
 
-    public Frame rsv(byte[] rsv) {
+    public WebsocketFrame rsv(byte[] rsv) {
         this.rsv = rsv;
         length += rsv.length;
         return self();
     }
 
-    public Frame opcode(byte[] opcode) {
+    public WebsocketFrame opcode(byte[] opcode) {
         this.opcode = opcode;
         length += opcode.length;
         return self();
     }
 
-    public Frame mask(byte mask) {
+    public WebsocketFrame mask(byte mask) {
         this.mask = mask;
         length += 1;
         return self();
     }
 
-    public Frame payloadLen(byte[] payloadLen) {
+    public WebsocketFrame payloadLen(byte[] payloadLen) {
         if (Objects.nonNull(payloadLen)) {
             this.payloadLen = payloadLen;
             length += payloadLen.length;
@@ -132,7 +125,7 @@ public class Frame {
         return self();
     }
 
-    public Frame payloadLenExtended(byte[] payloadLenExtended) {
+    public WebsocketFrame payloadLenExtended(byte[] payloadLenExtended) {
         if (Objects.nonNull(payloadLenExtended)) {
             this.payloadLenExtended = payloadLenExtended;
             length += payloadLenExtended.length;
@@ -140,7 +133,7 @@ public class Frame {
         return self();
     }
 
-    public Frame maskingKey(byte[] maskingKey) {
+    public WebsocketFrame maskingKey(byte[] maskingKey) {
         if (Objects.nonNull(maskingKey)) {
             this.maskingKey = maskingKey;
             length += maskingKey.length;
@@ -148,7 +141,7 @@ public class Frame {
         return self();
     }
 
-    public Frame payloadData(byte[] payloadData) {
+    public WebsocketFrame payloadData(byte[] payloadData) {
         if (Objects.nonNull(payloadData)) {
             this.payloadData = payloadData;
             length += payloadData.length;
