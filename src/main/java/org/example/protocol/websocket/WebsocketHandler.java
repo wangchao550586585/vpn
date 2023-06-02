@@ -16,6 +16,8 @@ import java.util.Objects;
  * 替代HTTP轮询的方法来满足Web页面和远端服务器的双向数据通信。
  * ws-URI = "ws:" "//" host [ ":" port ] path [ "?" query ]
  * wss-URI = "wss:" "//" host [ ":" port ] path [ "?" query ]
+ *
+ * https://github.com/HJava/myBlog/blob/master/WebSocket%20%E7%B3%BB%E5%88%97/WebSocket%E7%B3%BB%E5%88%97%E4%B9%8B%E4%BA%8C%E8%BF%9B%E5%88%B6%E6%95%B0%E6%8D%AE%E8%AE%BE%E8%AE%A1%E4%B8%8E%E4%BC%A0%E8%BE%93.md
  */
 public class WebsocketHandler extends HttpHandler {
     private static final byte[] MAGIC = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11".getBytes();
