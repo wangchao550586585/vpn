@@ -156,7 +156,7 @@ tlsv加密正常。
 
 ## 协议升级过程
 
-![image-20230602133947084](/Users/a1/Library/Application Support/typora-user-images/image-20230602133947084.png)
+<img width="1414" alt="image-20230602133947084" src="https://github.com/wangchao550586585/vpn/assets/21312820/4c935308-6c1b-4a4b-b982-0b5da4ca97e3">
 
 这里可以看到
 
@@ -193,29 +193,35 @@ Response.builder()//构建状态行
 
 协议如下：
 
-![image-20230602134623081](/Users/a1/Library/Application Support/typora-user-images/image-20230602134623081.png)
+<img width="535" alt="image-20230602134623081" src="https://github.com/wangchao550586585/vpn/assets/21312820/091fa9c0-6f49-4372-8cfd-ec6baeb3b230">
 
-![image-20230602134707790](/Users/a1/Library/Application Support/typora-user-images/image-20230602134707790.png)
+<img width="1440" alt="image-20230602134707790" src="https://github.com/wangchao550586585/vpn/assets/21312820/4527c4e5-9bea-481e-b182-f3bf3e61cc26">
 
 按照如上格式解析协议数据就行了。
 
-![image-20230602134736905](/Users/a1/Library/Application Support/typora-user-images/image-20230602134736905.png)
+<img width="1433" alt="image-20230602134833043" src="https://github.com/wangchao550586585/vpn/assets/21312820/8f56c0ed-1c18-42e0-b28f-48798c0a3ace">
 
 响应也同理。
 
-![image-20230602134833043](/Users/a1/Library/Application Support/typora-user-images/image-20230602134833043.png)
+<img width="1433" alt="image-20230602134833043" src="https://github.com/wangchao550586585/vpn/assets/21312820/711ab081-aec9-40e6-826a-96dba1912c21">
 
 ## 关闭过程
 
-![image-20230602134951987](/Users/a1/Library/Application Support/typora-user-images/image-20230602134951987.png)
-
+<img width="1424" alt="image-20230602134951987" src="https://github.com/wangchao550586585/vpn/assets/21312820/3e8244be-4a47-4d47-bd59-bc3c1d5ef161">
 通过js触发的close事件是没有响应体的。客户端触发的close事件服务端是需要回应的。我这里回应后并封装了code表示关闭状态。
 
-![image-20230602135212169](/Users/a1/Library/Application Support/typora-user-images/image-20230602135212169.png)
+<img width="1250" alt="image-20230602135212169" src="https://github.com/wangchao550586585/vpn/assets/21312820/8310f0f8-d6d1-4427-a7a4-1d54ee130ef2">
 
 常用的关闭状态码
 
-![image-20230602135341921](/Users/a1/Library/Application Support/typora-user-images/image-20230602135341921.png)
+<img width="886" alt="image-20230602135341921" src="https://github.com/wangchao550586585/vpn/assets/21312820/ecfdab30-b03e-4aef-8259-2ca2b423491a">
+### 浏览器关闭网页触发关闭
+
+可以看到浏览器发送了code。code对应的数字为1001.
+<img width="1270" alt="image-20230602140002199" src="https://github.com/wangchao550586585/vpn/assets/21312820/3e31febe-c21a-486b-a503-762100b0ba50">
+<img width="1283" alt="image-20230602140054456" src="https://github.com/wangchao550586585/vpn/assets/21312820/489af21e-026d-4a4c-b826-c95fd3ab0fd4">
+
+
 
 # 特性
 
@@ -234,5 +240,4 @@ Response.builder()//构建状态行
         1. <img width="896" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/08a2281a-e935-4377-b5c9-8d332b48ddcd">
 11. 支持http请求
           1. <img width="903" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/4437b700-6260-4b65-a7c6-3cb3196121ec">
-
           2. <img width="893" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/48fcfc69-2d7d-4bbb-a18b-09bf80230c40">
