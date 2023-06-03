@@ -3,9 +3,13 @@ package org.example.protocol.dns.entity;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.example.util.Utils;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.example.util.Utils.copy;
 
@@ -84,6 +88,86 @@ public class DnsFrame {
     private byte[] _class;
     //“该报文为标准查询(Opcode=0)请求(response=1)报文，向本地域名服务器( IP 报文中目的地址为本地域名服务器地址，在上面准备工作中已经知道了)请求查询，
     // 发起请求内容为 ‘获取www.biying.com (Name=www.baidu.com)所对应的IP4地址(Type=A)’，期待本地域名服务器递归查询(Recursion Desired=1)请求”
+
+    //answers
+    List<Answer> answers = new ArrayList<Answer>();
+
+    public static class Answer {
+        private byte[] name;
+        private byte[] type;
+        private byte[] _class;
+        private byte[] ttl;
+        private byte[] data;
+        private byte[] address;//cname
+
+        public Answer name(byte[] name) {
+            this.name = name;
+            return self();
+        }
+
+        public Answer type(byte[] type) {
+            this.type = type;
+            return self();
+        }
+
+        public Answer _class(byte[] _class) {
+            this._class = _class;
+            return self();
+        }
+
+        public Answer ttl(byte[] ttl) {
+            this.ttl = ttl;
+            return self();
+        }
+
+        public Answer data(byte[] data) {
+            this.data = data;
+            return self();
+        }
+
+        public Answer address(byte[] address) {
+            this.address = address;
+            return self();
+        }
+
+        public byte[] name() {
+            return name;
+        }
+
+        public byte[] type() {
+            return type;
+        }
+
+        public byte[] _class() {
+            return _class;
+        }
+
+        public byte[] ttl() {
+            return ttl;
+        }
+
+        public byte[] data() {
+            return data;
+        }
+
+        public byte[] address() {
+            return address;
+        }
+
+        private Answer self() {
+            return this;
+        }
+
+        public static Answer builder() {
+            return new Answer();
+        }
+
+    }
+
+    /**
+     * 协议原生数据
+     */
+    private byte[] originFrame;
 
     private int length;
     protected final Logger LOGGER = LogManager.getLogger(this.getClass());
@@ -166,7 +250,7 @@ public class DnsFrame {
         return z;
     }
 
-    public DnsFrame z (byte[] z) {
+    public DnsFrame z(byte[] z) {
         this.z = z;
         length += z.length;
         return self();
@@ -222,7 +306,7 @@ public class DnsFrame {
         return self();
     }
 
-    public byte[] getName() {
+    public byte[] name() {
         return name;
     }
 
@@ -249,6 +333,24 @@ public class DnsFrame {
     public DnsFrame _class(byte[] _class) {
         this._class = _class;
         length += _class.length;
+        return self();
+    }
+
+    public List<Answer> answers() {
+        return answers;
+    }
+
+    public DnsFrame answers(List<Answer> answers) {
+        this.answers = answers;
+        return self();
+    }
+
+    public byte[] originFrame() {
+        return originFrame;
+    }
+
+    public DnsFrame originFrame(byte[] originFrame) {
+        this.originFrame = originFrame;
         return self();
     }
 
@@ -304,7 +406,5 @@ public class DnsFrame {
         off = copy(off, bytes, _class);
         return Utils.binary2Bytes(bytes);
     }
-
-
 
 }

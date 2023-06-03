@@ -147,6 +147,7 @@ public class Utils {
                 , (byte) (aByte & 0x1)
         };
     }
+
     /**
      * 01的bit数组转成字节数组
      *
@@ -171,6 +172,7 @@ public class Utils {
     /**
      * 01转成单个int
      * 按照大端表示法
+     *
      * @param bytes
      * @return
      */
@@ -208,8 +210,9 @@ public class Utils {
 
     /**
      * 反掩码并编译成字符串
+     *
      * @param payloadData 01组成数组
-     * @param maskingKey 01组成数组
+     * @param maskingKey  01组成数组
      * @return
      */
     public static String unmask(byte[] payloadData, byte[] maskingKey) {
@@ -220,8 +223,9 @@ public class Utils {
 
     /**
      * 反掩码并编译成字节数组
+     *
      * @param payloadData 01组成数组
-     * @param maskingKey 01组成数组
+     * @param maskingKey  01组成数组
      * @return
      */
     public static byte[] unmaskBytes(byte[] payloadData, byte[] maskingKey) {
@@ -253,7 +257,7 @@ public class Utils {
     }
 
     /**
-     * int转成2字节，采用二进制显示
+     * int转成按照网络大端存储，采用二进制显示
      *
      * @param code
      * @return
@@ -274,6 +278,7 @@ public class Utils {
      * copy: src -> desc
      * src从索引0开始拷贝
      * 从dest数组off下标位置，拷贝src数组的长度。
+     *
      * @param off
      * @param dest
      * @param src
@@ -282,5 +287,19 @@ public class Utils {
     public static int copy(int off, byte[] dest, byte[] src) {
         System.arraycopy(src, 0, dest, off, src.length);
         return (off + src.length);
+    }
+
+    /**
+     * 合并2个字节数组
+     *
+     * @param arr1
+     * @param arr2
+     * @return
+     */
+    public static byte[] merge(byte[] arr1, byte[] arr2) {
+        byte[] result = new byte[arr1.length + arr2.length];
+        copy(0, result,arr1 );
+        copy(arr1.length, result,arr2);
+        return result;
     }
 }
