@@ -30,32 +30,17 @@ public class DnsHandler {
 
 
     public static void main(String[] args) throws Exception {
-        new DnsHandler().exec("www.baidu.com");
+        List<String> cname = new ArrayList<>();
+        new DnsHandler().exec("www.biying.com");
     }
 
     /**
      * @throws Exception
      */
-    protected void exec(String host) throws Exception {
+    protected void exec(String cname) throws Exception {
         //域名被编码为一些labels序列，每个labels包含一个字节表示后续字符串长度，以及这个字符串，以0长度和空字符串来表示域名结束。
-        String[] split = host.split("\\.");
-        int length = 0;
-        for (int i = 0; i < split.length; i++) {
-            //存储字节
-            length++;
-            length += split[i].length();
-        }
-        byte[] name = new byte[length + 1];
-        int off = 0;
-        for (int i = 0; i < split.length; i++) {
-            byte[] bytes = split[i].getBytes();
-            name[off++] = (byte) split[i].length();
-            off = copy(off, name, bytes);
-        }
-        //最后一位需要置0
-        name[name.length - 1] = 0x00;
-        byte[] bytes1 = Utils.bytes2Binary(name);
-        //改成9字节
+        byte[] name = getNameFrame(cname);
+        byte[] type = Utils.int2BinaryA2Byte(1);
         //二进制，16位0
         byte[] bytes = Utils.int2BinaryA2Byte(0);
         ByteBuffer write = DnsFrame.builder()
@@ -72,9 +57,11 @@ public class DnsHandler {
                 .answer(bytes)//2字节,回答资源记录数
                 .authority(bytes)//2字节,权威名称服务器计数
                 .additional(bytes)//2字节,附加资源记录数
-                .name(bytes1)
-                .type(Utils.int2BinaryA2Byte(1))
+                //构建query
+                .name(name)
+                .type(type)
                 ._class(Utils.int2BinaryA2Byte(1))
+                //end query
                 .write(channel, "x");
         DnsFrame dnsFrame = parse(write);
         if (dnsFrame == null) {
@@ -96,6 +83,31 @@ public class DnsHandler {
         }
         String queryName = parseName(dnsFrame.name(), dnsFrame.originFrame());
         LOGGER.info("queryName {} answers {} ", queryName, addressList);
+    }
+
+    private static byte[] getNameFrame(String host) {
+        String[] split = host.split("\\.");
+        //构建协议name的字节总长度
+        int length = 0;
+        for (int i = 0; i < split.length; i++) {
+            //存储字节
+            length++;
+            length += split[i].length();
+        }
+        byte[] name = new byte[length + 1];
+
+        int off = 0;
+        for (int i = 0; i < split.length; i++) {
+            byte[] bytes = split[i].getBytes();
+            //添加长度
+            name[off++] = (byte) split[i].length();
+            //bytes数据拷贝到协议name字节数组中
+            off = copy(off, name, bytes);
+        }
+        //最后一位需要置0
+        name[name.length - 1] = 0x00;
+        byte[] bytes1 = Utils.bytes2Binary(name);
+        return bytes1;
     }
 
 
@@ -267,7 +279,6 @@ public class DnsHandler {
                 byte[] merge = Utils.merge(lengthBinary, lengthBinary2);
                 String s = parseName(merge, originFrame);
                 sb.append(s).append(".");
-                ;
                 break;
             }
             byte[] data = Arrays.copyOfRange(originFrame, off, off + length * 8);
