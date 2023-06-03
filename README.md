@@ -20,7 +20,7 @@
     3. 支持响应ping事件
     4. 支持发送pong事件
     5. 支持发送0~65535位以内数据。
-7. 实现dns协议，基于udp协议。(开发中)
+7. 实现dns协议，基于udp协议。
 8. 实现tcp，udp(尚未开发)
 9. 缓冲区对象池化（借鉴jemalloc，和netty池化内存思想)(尚未开发)
 
@@ -222,6 +222,7 @@ Response.builder()//构建状态行
 <img width="1270" alt="image-20230602140002199" src="https://github.com/wangchao550586585/vpn/assets/21312820/3e31febe-c21a-486b-a503-762100b0ba50">
 <img width="1283" alt="image-20230602140054456" src="https://github.com/wangchao550586585/vpn/assets/21312820/489af21e-026d-4a4c-b826-c95fd3ab0fd4">
 
+# dns
 ## 结构
 
 ```
@@ -603,3 +604,4 @@ cname解析也同上，这里框1表示读取后续5位。框二同理。框三�
 11. 支持http请求
           1. <img width="903" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/4437b700-6260-4b65-a7c6-3cb3196121ec">
           2. <img width="893" alt="image" src="https://github.com/wangchao550586585/vpn/assets/21312820/48fcfc69-2d7d-4bbb-a18b-09bf80230c40">
+11. 支持dns协议。
