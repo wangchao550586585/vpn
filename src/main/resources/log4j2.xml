@@ -19,7 +19,7 @@ All < Trace < Debug < Info < Warn < Error < Fatal < OFF
 
     <Loggers>
         <!-- 日志类别 -->
-        <Root level="Debug">
+        <Root level="Info">
             <!-- Console的name -->
             <AppenderRef ref="Console"/>
         </Root>

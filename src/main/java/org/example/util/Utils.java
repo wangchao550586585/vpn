@@ -23,7 +23,7 @@ public class Utils {
             byte[] bytes = Arrays.copyOfRange(allocate.array(), allocate.position(), allocate.limit());
             try {
                 String s = new String(bytes, "utf-8");
-                LOGGER.info(" {} {} ", fix, s);
+                LOGGER.info(" {}\r\n{} " ,s);
             } catch (UnsupportedEncodingException e) {
                 throw new RuntimeException(e);
             }

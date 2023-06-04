@@ -5,7 +5,6 @@ import org.apache.logging.log4j.Logger;
 import org.example.entity.ChannelWrapped;
 import org.example.protocol.AbstractHandler;
 import org.example.protocol.http.HttpHandler;
-import org.example.protocol.websocket.WebsocketHandler;
 import org.example.util.UnsafeHelper;
 import org.example.util.Utils;
 import org.jctools.queues.atomic.MpscChunkedAtomicArrayQueue;
@@ -220,11 +219,11 @@ public class SlaveReactor implements Runnable {
                 SelectionKey selectionKey = childChannel.register(unwrappedSelector, 0);
                 ChannelWrapped channelWrapped = ChannelWrapped.builder().key(selectionKey).channel(childChannel);
                 //AbstractHandler handler = new AuthHandler(channelWrapped);
-                //AbstractHandler handler = new HttpHandler(channelWrapped);
-                WebsocketHandler handler = new WebsocketHandler(channelWrapped);
+                AbstractHandler handler = new HttpHandler(channelWrapped);
+                //WebsocketHandler handler = new WebsocketHandler(channelWrapped);
                 selectionKey.attach(handler);
                 selectionKey.interestOps(SelectionKey.OP_READ);
-                LOGGER.info("slaveReactor register childChannel success {}", handler.uuid());
+                LOGGER.debug("slaveReactor register childChannel success {}", handler.uuid());
             } catch (IOException e) {
                 LOGGER.error("slaveReactor register childChannel fail ", e);
                 throw new RuntimeException(e);

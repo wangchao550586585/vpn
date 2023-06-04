@@ -173,7 +173,7 @@ public final class Response {
             }
             stream.close();
         }
-        LOGGER.info("response {} {} ", response, uuid);
+        LOGGER.info("response {} \r\n{} ",uuid, response);
     }
 
 }

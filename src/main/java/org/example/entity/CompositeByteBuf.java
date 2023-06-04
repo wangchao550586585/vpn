@@ -134,9 +134,9 @@ public class CompositeByteBuf {
     /**
      * 打印尚未读取的数据
      */
-    public void print() {
+    public void print(String uuid) {
         for (int i = readIndex; i < buffers.size(); i++) {
-            Utils.printString(buffers.get(i), "nPrint");
+            Utils.printString(buffers.get(i), uuid);
         }
     }
 

@@ -2,8 +2,8 @@ package org.example;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.example.protocol.AbstractHandler;
 import org.example.protocol.socks5.entity.Resource;
-import org.example.protocol.socks5.ConnectionHandler;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -22,9 +22,9 @@ public class RemoteConnect implements Runnable {
     final SocketChannel childChannel;
     Selector remoteSelector;
     SocketChannel remoteChannel;
-    ConnectionHandler connectionHandler;
+    AbstractHandler connectionHandler;
 
-    public RemoteConnect(String host, Integer port, String uuid, SocketChannel childChannel, ConnectionHandler connectionHandler) {
+    public RemoteConnect(String host, Integer port, String uuid, SocketChannel childChannel, AbstractHandler connectionHandler) {
         this.host = host;
         this.port = port;
         this.uuid = uuid;
@@ -44,7 +44,7 @@ public class RemoteConnect implements Runnable {
                     if (finalSocketChannel == null || !finalSocketChannel.isConnected()) {
                         try {
                             finalSocketChannel.close();
-                            LOGGER.warn("remote connect timeout {}", uuid);
+                            LOGGER.info("remote connect timeout {}", uuid);
                         } catch (Exception e) {
                             LOGGER.error("remote connect fail , so close fail " + uuid, e);
                             throw new RuntimeException(e);
@@ -53,7 +53,7 @@ public class RemoteConnect implements Runnable {
                 }
             }, 300);
             remoteChannel.connect(new InetSocketAddress(host, port));
-            LOGGER.info("remote connect success {} remoteAddress {} ", uuid, remoteChannel.getRemoteAddress());
+            LOGGER.debug("remote connect success {} remoteAddress {} ", uuid, remoteChannel.getRemoteAddress());
             timer.cancel();
             remoteChannel.configureBlocking(false);
             while (!remoteChannel.finishConnect()) {
@@ -61,14 +61,15 @@ public class RemoteConnect implements Runnable {
             this.remoteSelector = Selector.open();
             remoteChannel.register(remoteSelector, SelectionKey.OP_READ);
             resource = new Resource().remoteChannel(remoteChannel).remoteSelector(remoteSelector);
-            LOGGER.info("remote register success {}", uuid);
+            LOGGER.debug("remote register success {}", uuid);
         } catch (Exception exception) {
             //对方主动关闭，自己主动超时关闭
             if (exception instanceof AsynchronousCloseException || exception instanceof ClosedChannelException) {
-                LOGGER.info("remote connect fail {}", uuid);
+                LOGGER.debug("remote connect fail {}", uuid);
             } else {
                 LOGGER.error("remote connect fail " + uuid, exception);
             }
+            LOGGER.info("remote close {}", uuid);
             closeRemote();
             //这里不能往上抛异常
             return null;
@@ -82,13 +83,13 @@ public class RemoteConnect implements Runnable {
         try {
             while (true) {
                 if (!remoteSelector.isOpen()) {
-                    LOGGER.warn("elector 正常退出 {}", uuid);
+                    LOGGER.debug("selector 正常退出 {}", uuid);
                     break;
                 }
                 int n = remoteSelector.select();
                 if (n == 0) {
                     if (!remoteSelector.isOpen()) {
-                        LOGGER.warn("elector 正常退出 {}", uuid);
+                        LOGGER.debug("selector 正常退出 {}", uuid);
                         break;
                     }
                     continue;
@@ -106,7 +107,7 @@ public class RemoteConnect implements Runnable {
                         ByteBuffer allocate = ByteBuffer.allocate(4096 * 5);
                         int read = remoteChannel.read(allocate);
                         if (read < 0) {
-                            LOGGER.info("remote read end {}", uuid);
+                            LOGGER.info("remote close ,because remote read end {}", uuid);
                             connectionHandler.closeChildChannel();
                             closeRemote();
                             break;

@@ -15,6 +15,13 @@ import java.util.List;
 
 import static org.example.util.Utils.copy;
 
+/**
+ * https://www.cnblogs.com/mggahui/p/13899888.html
+ * https://blog.csdn.net/chen1415886044/article/details/121054801
+ * https://juejin.cn/post/6844903582441963527
+ * https://blog.csdn.net/qq_20677327/article/details/106994017
+ * https://developer.aliyun.com/article/441173
+ */
 public class DnsHandler {
     protected static final Logger LOGGER = LogManager.getLogger(DnsHandler.class);
     private static DatagramChannel channel;

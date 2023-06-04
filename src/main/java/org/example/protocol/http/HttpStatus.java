@@ -1,7 +1,8 @@
 package org.example.protocol.http;
 
 public enum HttpStatus {
-    OK(200, "OK"), NOT_FOUND(404, "NOT_FOUND"),UPGRADE(101, "Switching Protocols");;
+    OK(200, "OK"), NOT_FOUND(404, "NOT_FOUND"),UPGRADE(101, "Switching Protocols")
+    ;
     private int statusCode;
     private String reasonPhrase;
 

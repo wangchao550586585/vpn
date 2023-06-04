@@ -21,15 +21,15 @@ public class App {
     private void vpnStart() {
         try {
             ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
-            serverSocketChannel.socket().bind(new InetSocketAddress(80));
-            LOGGER.debug("MasterReactor bind success");
+            serverSocketChannel.socket().bind(new InetSocketAddress(8070));
+            LOGGER.info("MasterReactor bind success");
             serverSocketChannel.configureBlocking(false);
             Selector masterReactor = Selector.open();
-            LOGGER.debug("MasterReactor selector open success");
+            LOGGER.info("MasterReactor selector open success");
             SelectorStrategy selectorStrategy = new SelectorStrategy();
-            LOGGER.debug("slaveReactor open Selector all success");
+            LOGGER.info("slaveReactor open Selector all success");
             serverSocketChannel.register(masterReactor, SelectionKey.OP_ACCEPT);
-            LOGGER.debug("MasterReactor channel register success");
+            LOGGER.info("MasterReactor channel register success");
             while (true) {
                 int n = masterReactor.select();
                 if (n == 0) {

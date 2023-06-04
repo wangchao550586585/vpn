@@ -1,9 +1,13 @@
 package org.example.protocol.http;
 
+import org.example.RemoteConnect;
 import org.example.entity.CompositeByteBuf;
 import org.example.entity.ChannelWrapped;
 import org.example.protocol.AbstractHandler;
 import org.example.protocol.http.entity.*;
+import org.example.protocol.socks5.DeliverHandler;
+import org.example.protocol.socks5.entity.Resource;
+
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.channels.FileChannel;
@@ -84,30 +88,57 @@ public class HttpHandler extends AbstractHandler {
             doGet(request);
         } else if (method.equals("POST")) {
             doPost(request);
-        }else{
+        } else if (method.equals("CONNECT")) {
+            doConnect(request);
+        } else {
             otherMethod(request);
         }
         //清除读取的数据
         channelWrapped.cumulation().clear();
     }
 
+    private void doConnect(Request request) throws IOException {
+        String uuid = channelWrapped.uuid();
+        String[] split = request.getStartLine().getRequestTarget().split(":");
+        Resource resource = new RemoteConnect(split[0], Integer.parseInt(split[1]), channelWrapped.uuid(), channelWrapped.channel(), this).connect();
+        if (Objects.nonNull(resource)) {
+            //更换附件
+            DeliverHandler deliverHandler = new DeliverHandler(channelWrapped, resource);
+            channelWrapped.key().attach(deliverHandler);
+            Response.builder()//构建状态行
+                    .httpVersion(request.getStartLine().getHttpVersion())
+                    .httpStatus(HttpStatus.OK)
+                    .date()  //构建响应头
+                    .connection(request.getRequestHeaders().getConnection())
+                    .contentLanguage("zh-CN")
+                    .write(channelWrapped.channel(), channelWrapped.uuid());
+        } else {
+            LOGGER.info("child close {}", uuid);
+            closeChildChannel();
+        }
+    }
+
     protected void otherMethod(Request request) {
 
     }
 
-    protected Request getRequest() {
+    public Request getRequest() {
         String uuid = channelWrapped.uuid();
         CompositeByteBuf cumulation = channelWrapped.cumulation();
+        if (cumulation.remaining() <= 0) {
+            LOGGER.info("{} request empty",uuid);
+            return null;
+        }
         cumulation.mark();
-        cumulation.print();
+        cumulation.print(uuid);
         //1:读取start line
         StartLine startLine = StartLine.parse(cumulation.readLine());
-        LOGGER.info("startLine {} {} ", startLine, uuid);
+        LOGGER.debug("startLine {} {} ", startLine, uuid);
 
         //2:读取请求头
         //通常会在一个 POST 请求中带有一个 Content-Length 头字段
         RequestHeaders requestLine = RequestHeaders.parse(cumulation);
-        LOGGER.info("headerFields {} {}", requestLine, uuid);
+        LOGGER.debug("headerFields {} {}", requestLine, uuid);
 
         Request request = new Request(startLine, requestLine);
         //3:获取请求体
@@ -130,11 +161,11 @@ public class HttpHandler extends AbstractHandler {
             if (requestLine.getContentType().contains("multipart/form-data")) {
                 List<Multipart> multiparts = Multipart.parse(cumulation, requestLine.getContentType());
                 request.setMultiparts(multiparts);
-                LOGGER.info("multiparts {} {}", multiparts, uuid);
+                LOGGER.debug("multiparts {} {}", multiparts, uuid);
             } else {
                 String payload = cumulation.read(contentLength);
                 request.setRequestBody(payload);
-                LOGGER.info("payloads {} {}", payload, uuid);
+                LOGGER.debug("payloads {} {}", payload, uuid);
             }
         }
 
@@ -150,7 +181,7 @@ public class HttpHandler extends AbstractHandler {
             String params = requestTarget.substring(pre + 1, requestTarget.length());
             Map<String, String> paramsMap = parseParams(params);
             request.setParams(paramsMap);
-            LOGGER.info("params {} {}", paramsMap, uuid);
+            LOGGER.debug("params {} {}", paramsMap, uuid);
         }
     }
 
@@ -277,7 +308,10 @@ public class HttpHandler extends AbstractHandler {
                     .write(channelWrapped.channel(), channelWrapped.uuid());
         } else {
             //获取响应体
-            String payload = buildPayload(request.getParams().toString());
+            String payload = "helloworld";
+            if (Objects.nonNull(request.getParams())) {
+                payload = buildPayload(request.getParams().toString());
+            }
             byte[] data = payload.getBytes();
             Response.builder()//构建状态行
                     .httpVersion(request.getStartLine().getHttpVersion())

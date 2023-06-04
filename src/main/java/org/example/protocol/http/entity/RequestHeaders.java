@@ -20,6 +20,17 @@ public class RequestHeaders {
     private String host;
     private String cacheControl;
     private String userAgent;
+    private String secchua;
+    private String secchuamobile;
+    private String secchuaplatform;
+    private String secFetchSite;
+    private String secFetchMode;
+    private String secFetchDest;
+    private String secFetchUser;
+    private String upgradeInsecureRequests;
+    private String referer;
+    private String proxyConnection;
+    private String proxyAuthorization;
     /**
      * 如下websocket支持
      */
@@ -70,7 +81,6 @@ public class RequestHeaders {
             } catch (InvocationTargetException e) {
                 throw new RuntimeException(e);
             }
-            LOGGER.info("{}: {}", arr[0], arr[1]);
         }
         return requestHeaders;
     }
@@ -193,6 +203,94 @@ public class RequestHeaders {
 
     public void setSecWebSocketExtensions(String secWebSocketExtensions) {
         this.secWebSocketExtensions = secWebSocketExtensions;
+    }
+
+    public String getSecchua() {
+        return secchua;
+    }
+
+    public void setSecchua(String secchua) {
+        this.secchua = secchua;
+    }
+
+    public String getSecchuamobile() {
+        return secchuamobile;
+    }
+
+    public void setSecchuamobile(String secchuamobile) {
+        this.secchuamobile = secchuamobile;
+    }
+
+    public String getSecchuaplatform() {
+        return secchuaplatform;
+    }
+
+    public void setSecchuaplatform(String secchuaplatform) {
+        this.secchuaplatform = secchuaplatform;
+    }
+
+    public String getSecFetchSite() {
+        return secFetchSite;
+    }
+
+    public void setSecFetchSite(String secFetchSite) {
+        this.secFetchSite = secFetchSite;
+    }
+
+    public String getSecFetchMode() {
+        return secFetchMode;
+    }
+
+    public void setSecFetchMode(String secFetchMode) {
+        this.secFetchMode = secFetchMode;
+    }
+
+    public String getSecFetchDest() {
+        return secFetchDest;
+    }
+
+    public void setSecFetchDest(String secFetchDest) {
+        this.secFetchDest = secFetchDest;
+    }
+
+    public String getReferer() {
+        return referer;
+    }
+
+    public void setReferer(String referer) {
+        this.referer = referer;
+    }
+
+    public String getSecFetchUser() {
+        return secFetchUser;
+    }
+
+    public void setSecFetchUser(String secFetchUser) {
+        this.secFetchUser = secFetchUser;
+    }
+
+    public String getUpgradeInsecureRequests() {
+        return upgradeInsecureRequests;
+    }
+
+    public void setUpgradeInsecureRequests(String upgradeInsecureRequests) {
+        this.upgradeInsecureRequests = upgradeInsecureRequests;
+    }
+
+    public String getProxyConnection() {
+        return proxyConnection;
+    }
+
+    public void setProxyConnection(String proxyConnection) {
+        this.proxyConnection = proxyConnection;
+    }
+
+    public String getProxyAuthorization() {
+        return proxyAuthorization;
+    }
+
+    public void setProxyAuthorization(String proxyAuthorization) {
+        this.proxyAuthorization = proxyAuthorization;
     }
 
     @Override

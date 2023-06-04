@@ -584,6 +584,10 @@ cname解析也同上，这里框1表示读取后续5位。框二同理。框三�
 
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/388b9b38a160496cbccf2b9f747ceabf.png)
 
+# dns
+
+
+
 
 
 # 特性

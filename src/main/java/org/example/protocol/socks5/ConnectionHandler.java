@@ -99,6 +99,7 @@ public class ConnectionHandler extends AbstractHandler {
             DeliverHandler deliverHandler = new DeliverHandler(channelWrapped, resource);
             channelWrapped.key().attach(deliverHandler);
         } else {
+            LOGGER.info("child close {}", uuid);
             closeChildChannel();
         }
     }
