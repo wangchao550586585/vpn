@@ -27,7 +27,7 @@ public class DeliverHandler extends AbstractHandler {
         //获取服务端数据
         cumulation.write(resource.remoteChannel());
         //清除读取的数据
-        cumulation.clear();
+        cumulation.clearAll();
         LOGGER.info("child -> remote  end {}", uuid);
     }
 

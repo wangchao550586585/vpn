@@ -1,4 +1,4 @@
-package org.example;
+package org.example.reactor;
 
 import java.util.concurrent.atomic.AtomicInteger;
 

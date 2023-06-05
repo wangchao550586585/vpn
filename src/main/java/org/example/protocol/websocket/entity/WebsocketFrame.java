@@ -46,7 +46,9 @@ public class WebsocketFrame {
     byte mask;
     byte[] payloadLen;  //字节的长度，而不是二进制数据的长度
     byte[] payloadLenExtended;
+    //字节显示
     byte[] maskingKey;
+    //字节显示
     byte[] payloadData;
     private int length;
     private final static byte DEFAULT_FIN = 0x01;
@@ -59,6 +61,18 @@ public class WebsocketFrame {
         return new WebsocketFrame();
     }
 
+    /**
+     *
+     * @param opcode
+     * @param mask
+     * @param payloadLen
+     * @param payloadLenExtended
+     * @param maskingKey
+     * @param payloadData 字节显示。
+     * @param channel
+     * @param uuid
+     * @throws IOException
+     */
     public static void defaultFrame(OpcodeEnum opcode, byte mask, byte[] payloadLen, byte[] payloadLenExtended, byte[] maskingKey, byte[] payloadData, SocketChannel channel, String uuid) throws IOException {
         WebsocketFrame.builder()//构建状态行
                 .fin(DEFAULT_FIN)//最后一个包含数据的帧的 FIN （ FIN 帧）字段必须设置为 1 。
@@ -84,7 +98,6 @@ public class WebsocketFrame {
         //payloadData = "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456".getBytes();
         //构建长度
         Pair<byte[], byte[]> pair = getLength(payloadData.length);
-        payloadData = Utils.bytes2Binary(payloadData);
         WebsocketFrame.defaultFrame(WebsocketFrame.OpcodeEnum.SEND_UTF,
                 DEFAULT_MASK,
                 pair.getFirst(),
@@ -111,8 +124,6 @@ public class WebsocketFrame {
         //4字节
         byte[] maskingKey = Utils.buildMask();
         payloadData = Utils.mask(payloadData, maskingKey);
-        maskingKey = Utils.bytes2Binary(maskingKey);
-        payloadData = Utils.bytes2Binary(payloadData);
 
         //“负载字段”是用UTF-8编码的文本数据。
         WebsocketFrame.defaultFrame(WebsocketFrame.OpcodeEnum.SEND_UTF,
@@ -233,13 +244,24 @@ public class WebsocketFrame {
         if (Objects.nonNull(payloadLenExtended)) {
             off = copy(off, bytes, payloadLenExtended);
         }
+        off=length/8;
         if (Objects.nonNull(maskingKey)) {
-            off = copy(off, bytes, maskingKey);
+            off+=maskingKey.length;
         }
         if (Objects.nonNull(payloadData)) {
-            off = copy(off, bytes, payloadData);
+            off+=payloadData.length;
         }
-        return Utils.binary2Bytes(bytes);
+        byte[] result = new byte[off];
+        Utils.binary2Bytes(bytes,result);
+
+        off=length/8;
+        if (Objects.nonNull(maskingKey)) {
+            off = copy(off, result, maskingKey);
+        }
+        if (Objects.nonNull(payloadData)) {
+            off = copy(off, result, payloadData);
+        }
+        return result;
     }
 
     private WebsocketFrame self() {
@@ -292,7 +314,6 @@ public class WebsocketFrame {
     public WebsocketFrame maskingKey(byte[] maskingKey) {
         if (Objects.nonNull(maskingKey)) {
             this.maskingKey = maskingKey;
-            length += maskingKey.length;
         }
         return self();
     }
@@ -300,7 +321,6 @@ public class WebsocketFrame {
     public WebsocketFrame payloadData(byte[] payloadData) {
         if (Objects.nonNull(payloadData)) {
             this.payloadData = payloadData;
-            length += payloadData.length;
         }
         return self();
     }

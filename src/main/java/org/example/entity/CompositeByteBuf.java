@@ -82,7 +82,6 @@ public class CompositeByteBuf {
             //printHex(buffer, uuid + " child -> remote ：");
             remoteClient.write(byteBuffer);
         }
-        clearAll();
     }
 
     public void clearAll() {

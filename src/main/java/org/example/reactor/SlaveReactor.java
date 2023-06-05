@@ -1,10 +1,9 @@
-package org.example;
+package org.example.reactor;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.example.entity.ChannelWrapped;
 import org.example.protocol.AbstractHandler;
-import org.example.protocol.http.HttpHandler;
 import org.example.protocol.websocket.server.WebsocketHandler;
 import org.example.util.UnsafeHelper;
 import org.example.util.Utils;

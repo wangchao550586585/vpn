@@ -2,7 +2,7 @@ package org.example.util;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.example.SlaveReactor;
+import org.example.reactor.SlaveReactor;
 import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;

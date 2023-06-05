@@ -20,6 +20,7 @@ import java.util.Random;
 public class Utils {
     protected static final Logger LOGGER = LogManager.getLogger(Utils.class);
     private static final Random r = new Random();
+
     /**
      * 将二进制数据转成字符串打印
      *
@@ -178,6 +179,24 @@ public class Utils {
     }
 
     /**
+     * 01的bit数组转成字节数组到result
+     * @param payloadData
+     * @param result
+     */
+    public static void binary2Bytes(byte[] payloadData,byte[]result) {
+        int r = 0;
+        byte[] bytes1 = new byte[8];
+        for (int i = 0; i < payloadData.length; i++) {
+            int i1 = i % 8;
+            if (i != 0 && i1 == 0) {
+                result[r++] = (byte) Utils.binary2Int(bytes1);
+            }
+            bytes1[i1] = payloadData[i];
+        }
+        result[r] = (byte) Utils.binary2Int(bytes1);
+    }
+
+    /**
      * 01转成单个int
      * 按照大端表示法
      *
@@ -280,6 +299,18 @@ public class Utils {
         System.arraycopy(bytes, 0, sendPayloadData, 0, bytes.length);
         System.arraycopy(bytes2, 0, sendPayloadData, bytes.length, bytes2.length);
         return sendPayloadData;
+    }
+
+    /**
+     * int 转成2字节存储
+     *
+     * @param code
+     * @return
+     */
+    public static byte[] int2Byte(int code) {
+        int i = code / 256;
+        int i1 = code % 256;
+        return new byte[]{(byte) i, (byte) i1};
     }
 
     /**

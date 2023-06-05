@@ -1,6 +1,6 @@
 package org.example.entity;
 
-import org.example.protocol.socks5.RecvByteBufAllocator;
+import org.example.reactor.RecvByteBufAllocator;
 
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;

@@ -132,8 +132,8 @@ public class WebsocketReceive extends AbstractHandler {
                     LOGGER.info("close websocket empty statusCode msg  {}", uuid);
                 }
                 //1000表示正常关闭
-                sendPayloadData = Utils.int2BinaryA2Byte(1000);
-                sendPayloadLen = Utils.bytes2Binary((byte) 2);
+                sendPayloadData = Utils.int2Byte(1000);
+                sendPayloadLen = Utils.bytes2Binary((byte) sendPayloadData.length);
                 //这里len只有7位
                 sendPayloadLen = Arrays.copyOfRange(sendPayloadLen, 1, sendPayloadLen.length);
                 //响应关闭

@@ -33,7 +33,7 @@ public class Heartbeat implements Runnable {
         try {
             String uuid = channelWrapped.uuid();
             LOGGER.info("ping {} ", uuid);
-            WebsocketFrame.defaultFrame(WebsocketFrame.OpcodeEnum.PING, DEFAULT_HAS_MASK, null, null, Utils.bytes2Binary(Utils.buildMask()), null, this.channelWrapped.channel(), uuid);
+            WebsocketFrame.defaultFrame(WebsocketFrame.OpcodeEnum.PING, DEFAULT_HAS_MASK, null, null, Utils.buildMask(), null, this.channelWrapped.channel(), uuid);
             num++;
             //15秒没连接上，则退出。
             if (num >= 3) {
