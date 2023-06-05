@@ -1,8 +1,9 @@
 package org.example.protocol.http;
 
+import java.util.Arrays;
+
 public enum HttpStatus {
-    OK(200, "OK"), NOT_FOUND(404, "NOT_FOUND"),UPGRADE(101, "Switching Protocols")
-    ;
+    OK(200, "OK"), NOT_FOUND(404, "NOT_FOUND"), UPGRADE(101, "Switching Protocols");
     private int statusCode;
     private String reasonPhrase;
 
@@ -25,5 +26,9 @@ public enum HttpStatus {
 
     public void setReasonPhrase(String reasonPhrase) {
         this.reasonPhrase = reasonPhrase;
+    }
+
+    public static HttpStatus match(int statusCode) {
+        return Arrays.stream(HttpStatus.values()).filter(it->it.getStatusCode()==statusCode).findFirst().get();
     }
 }

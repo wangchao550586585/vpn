@@ -2,16 +2,24 @@ package org.example.util;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.example.entity.CompositeByteBuf;
+import org.example.protocol.http.entity.RequestHeaders;
 
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.security.AccessController;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivilegedAction;
 import java.util.Arrays;
+import java.util.Base64;
+import java.util.Random;
 
 public class Utils {
     protected static final Logger LOGGER = LogManager.getLogger(Utils.class);
-
+    private static final Random r = new Random();
     /**
      * 将二进制数据转成字符串打印
      *
@@ -23,7 +31,7 @@ public class Utils {
             byte[] bytes = Arrays.copyOfRange(allocate.array(), allocate.position(), allocate.limit());
             try {
                 String s = new String(bytes, "utf-8");
-                LOGGER.info(" {}\r\n{} " ,s);
+                LOGGER.info(" {}\r\n{} ", s);
             } catch (UnsupportedEncodingException e) {
                 throw new RuntimeException(e);
             }
@@ -298,8 +306,88 @@ public class Utils {
      */
     public static byte[] merge(byte[] arr1, byte[] arr2) {
         byte[] result = new byte[arr1.length + arr2.length];
-        copy(0, result,arr1 );
-        copy(arr1.length, result,arr2);
+        copy(0, result, arr1);
+        copy(arr1.length, result, arr2);
         return result;
     }
+
+    public static <T> T parse(CompositeByteBuf cumulation, Class<T> clazz) throws Exception {
+        T t = clazz.getConstructor().newInstance();
+        while (cumulation.remaining() > 0) {
+            String requestLine = cumulation.readLine();
+            //说明读取结束，则关闭流，连续读取到2个\r\n则退出
+            if (requestLine.length() == 0) {
+                break;
+            }
+            String[] arr = requestLine.split(":");
+            try {
+                String key = arr[0];
+                Object value = arr[1].trim();
+                int pre = key.indexOf("-");
+                if (pre > 0) {
+                    String substring = key.substring(0, pre).toLowerCase();
+                    String s = key.substring(pre, key.length()).replaceAll("-", "");
+                    key = substring + s;
+                } else {
+                    key = key.toLowerCase();
+                }
+                Field field = t.getClass().getDeclaredField(key);
+                if (field.getType() != String.class) {
+                    Class<?> type = field.getType();
+                    value = type.getConstructor(String.class).newInstance(value);
+                }
+                field.setAccessible(true);
+                field.set(t, value);
+            } catch (NoSuchFieldException e) {
+                LOGGER.error("NoSuchFieldException {}: {}", arr[0], arr[1]);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            } catch (InstantiationException e) {
+                throw new RuntimeException(e);
+            } catch (InvocationTargetException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return t;
+    }
+
+    private static final byte[] MAGIC = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11".getBytes();
+
+    /**
+     * 请求必须包含一个名为`Sec-WebSocket-Key`的header字段。这个header字段的值必须是由一个随机生成的16字节的随机数通过base64
+     * （见[RFC4648的第四章][3]）编码得到的。每一个连接都必须随机的选择随机数。
+     * 注意：例如，如果随机选择的值的字节顺序为0x01 0x02 0x03 0x04 0x05 0x06 0x07 0x08 0x09 0x0a 0x0b 0x0c 0x0d 0x0e 0x0f 0x10，
+     * 那么header字段的值就应该是"AQIDBAUGBwgJCgsMDQ4PEC=="。
+     * <p>
+     * 如果客户端收到的`Sec-WebSocket-Accept`header字段或者`Sec-WebSocket-Accept`header字段不等于通过`Sec-WebSocket-Key`字段的值
+     * （作为一个字符串，而不是base64解码后）和"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"串联起来，
+     * 忽略所有前后空格进行SHA-1编码然后base64值，那么客户端必须关闭连接。
+     *
+     * @param s
+     * @return
+     * @throws NoSuchAlgorithmException
+     */
+    public static String getKey(String s) throws NoSuchAlgorithmException {
+        MessageDigest md = MessageDigest.getInstance("SHA1");
+        md.update(s.getBytes());
+        md.update(MAGIC);
+        return Base64.getEncoder().encodeToString(md.digest());
+    }
+
+    /**
+     * 构建4字节掩码
+     *
+     * @return
+     */
+    public static byte[] buildMask() {
+        byte[] maskingKey = new byte[4];
+        for (int i = 0; i < maskingKey.length; i++) {
+            int i1 = r.nextInt(256);
+            maskingKey[i] = (byte) i1;
+        }
+        return maskingKey;
+    }
+
 }

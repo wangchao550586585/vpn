@@ -1,4 +1,4 @@
-package org.example.protocol.websocket;
+package org.example.protocol.websocket.server;
 
 import org.example.entity.ChannelWrapped;
 import org.example.protocol.AbstractHandler;
@@ -8,6 +8,8 @@ import org.example.util.Utils;
 
 import java.util.Arrays;
 import java.util.Objects;
+
+import static org.example.protocol.websocket.entity.WebsocketFrame.DEFAULT_MASK;
 
 /**
  * 0                   1                   2                   3
@@ -29,10 +31,10 @@ import java.util.Objects;
  * |                     Payload Data continued ...                |
  * +---------------------------------------------------------------+
  */
-public class Receive extends AbstractHandler {
+public class WebsocketReceive extends AbstractHandler {
     private final Request request;
 
-    public Receive(ChannelWrapped channelWrapped, Request request) {
+    public WebsocketReceive(ChannelWrapped channelWrapped, Request request) {
         super(channelWrapped);
         this.request = request;
     }
@@ -47,7 +49,7 @@ public class Receive extends AbstractHandler {
         客户端如果收到了一个添加了掩码的帧，必须立即关闭连接。
         在这种情况下，它可以使用第7.4.1节定义的1002（协议错误）状态码。（*/
         String uuid = channelWrapped.uuid();
-        WebsocketFrame frame = parse(channelWrapped);
+        WebsocketFrame frame = WebsocketFrame.parse(channelWrapped);
         //协议错误，断开连接
         if (Objects.isNull(frame)) {
             closeChildChannel();
@@ -63,8 +65,6 @@ public class Receive extends AbstractHandler {
             case 0x00:
                 break;
             case 0x01:
-                //响应数据，掩码
-                sendPayloadData = "接收成功".getBytes();
                 //“负载字段”是用UTF-8编码的文本数据。
                 if (tempPayloadData.length > 0) {
                     if (frame.mask() == 1) {
@@ -77,26 +77,8 @@ public class Receive extends AbstractHandler {
                     }
                     LOGGER.info("receive msg {} {} ", msg, uuid);
                 }
-                //测试超过126位
-                //sendPayloadData = "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456".getBytes();
-                //构建长度
-                if (sendPayloadData.length < 126) {
-                    sendPayloadLen = Utils.bytes2Binary((byte) sendPayloadData.length);
-                    //这里len只有7位
-                    sendPayloadLen = Arrays.copyOfRange(sendPayloadLen, 1, sendPayloadLen.length);
-                } else if (sendPayloadData.length >= 126 && sendPayloadData.length <= 65535) {
-                    sendPayloadLen = Utils.bytes2Binary((byte) 126);
-                    //这里len只有7位
-                    sendPayloadLen = Arrays.copyOfRange(sendPayloadLen, 1, sendPayloadLen.length);
-                    //如果是126，那么接下来的2个bytes解释为16bit的无符号整形作为负载数据的长度。
-                    //字节长度量以网络字节顺序表示
-                    payloadLenExtended = Utils.int2BinaryA2Byte(sendPayloadData.length);
-                } else {
-                    //如果是127，那么接下来的8个bytes解释为一个64bit的无符号整形（最高位的bit必须为0）作为负载数据的长度。
-                    // TODO: 2023/6/1 超过65535太长了，用不着
-                }
-                sendPayloadData = Utils.bytes2Binary(sendPayloadData);
-                WebsocketFrame.defaultFrame(WebsocketFrame.OpcodeEnum.SEND_UTF, sendPayloadData, sendPayloadLen, payloadLenExtended, channelWrapped.channel(), channelWrapped.uuid());
+                //响应数据，掩码
+                WebsocketFrame.serverSendUTF("接收成功", channelWrapped.channel(), uuid);
                 break;
             case 0x02:
                 //二进制帧
@@ -155,22 +137,13 @@ public class Receive extends AbstractHandler {
                 //这里len只有7位
                 sendPayloadLen = Arrays.copyOfRange(sendPayloadLen, 1, sendPayloadLen.length);
                 //响应关闭
-                WebsocketFrame.defaultFrame(WebsocketFrame.OpcodeEnum.CLOSE, sendPayloadData, sendPayloadLen, null, channelWrapped.channel(), channelWrapped.uuid());
+                WebsocketFrame.defaultFrame(WebsocketFrame.OpcodeEnum.CLOSE, DEFAULT_MASK, sendPayloadLen, null, null, sendPayloadData, channelWrapped.channel(), channelWrapped.uuid());
                 break;
             case 0x09:
                 /**
                  * 如果收到了一个心跳Ping帧，那么终端必须发送一个心跳Pong 帧作为回应，除非已经收到了一个关闭帧。终端应该尽快回复Pong帧。
                  */
-                WebsocketFrame.defaultFrame(WebsocketFrame.OpcodeEnum.PONG, null, null, null, channelWrapped.channel(), channelWrapped.uuid());
-                break;
-            case 0x10:
-                /**
-                 * 作为回应发送的Pong帧必须完整携带Ping帧中传递过来的“应用数据”字段。
-                 * 如果终端收到一个Ping帧但是没有发送Pong帧来回应之前的ping帧，那么终端可能选择用Pong帧来回复最近处理的那个Ping帧。
-                 * Pong帧可以被主动发送。这会作为一个单向的心跳。预期外的Pong包的响应没有规定。
-                 */
-                //不需要实现
-                WebsocketFrame.defaultFrame(WebsocketFrame.OpcodeEnum.PING, null, null, null, channelWrapped.channel(), channelWrapped.uuid());
+                WebsocketFrame.defaultFrame(WebsocketFrame.OpcodeEnum.PONG, DEFAULT_MASK, null, null, null, null, channelWrapped.channel(), channelWrapped.uuid());
                 break;
             default:
                 break;
@@ -207,75 +180,5 @@ public class Receive extends AbstractHandler {
         return msg;
     }
 
-    private WebsocketFrame parse(ChannelWrapped channelWrapped) {
-        byte[] frame = channelWrapped.cumulation().binaryString();
-        String s = Utils.buildBinaryReadable(frame);
-        LOGGER.info("receive frame {} {}", s, channelWrapped.uuid());
-        //表示这是消息的最后一个片段。第一个片段也有可能是最后一个片段。
-        int off = 0;
-        byte fin = frame[off];
-        //必须设置为0，除非扩展了非0值含义的扩展。如果收到了一个非0值但是没有扩展任何非0值的含义，接收终端必须断开WebSocket连接。
-        off++;
-        byte[] rsv = Arrays.copyOfRange(frame, off, off + 3);
-        off += 3;
-        for (int i = 0; i < rsv.length; i++) {
-            if (rsv[i] != 0x00) {
-                return null;
-            }
-        }
-        /**
-         * 定义“有效负载数据”的解释。如果收到一个未知的操作码，接收终端必须断开WebSocket连接。下面的值是被定义过的。
-         * %x0 表示一个持续帧
-         * %x1 表示一个文本帧
-         * %x2 表示一个二进制帧
-         * %x3-7 预留给以后的非控制帧
-         * %x8 表示一个连接关闭包
-         * %x9 表示一个ping包
-         * %xA 表示一个pong包
-         * %xB-F 预留给以后的控制帧
-         */
-        byte[] opcode = Arrays.copyOfRange(frame, off, off + 4);
-        off += 4;
-        //定义“有效负载数据”是否添加掩码。默认1，掩码的键值存在于Masking-Key中
-        byte mask = frame[off];
-        off++;
-        byte[] payloadLenBinary = Arrays.copyOfRange(frame, off, off + 7);
-        byte[] payloadLenExtended = null;
-        off += 7;
-        //表示有多少个字节，而不是01。
-        int payloadLen = Utils.binary2Int(payloadLenBinary);
-        if (payloadLen <= 125) {
-            //如果值为0-125，那么就表示负载数据的长度。
-        } else if (payloadLen == 126) {
-            //如果是126，那么接下来的2个bytes解释为16bit的无符号整形作为负载数据的长度。
-            payloadLenExtended = Arrays.copyOfRange(frame, off, (off + 2 * 8));
-            off += 2 * 8;
-            payloadLen = Utils.binary2Int(payloadLenExtended);
-        } else {
-            //如果是127，那么接下来的8个bytes解释为一个64bit的无符号整形（最高位的bit必须为0）作为负载数据的长度。
-            payloadLenExtended = Arrays.copyOfRange(frame, off, (off + 8 * 8));
-            off += 8 * 8;
-            payloadLen = Utils.binary2Int(payloadLenExtended);
-        }
-        //所有从客户端发往服务端的数据帧都已经与一个包含在这一帧中的32 bit的掩码进行过了运算。
-        //如果mask标志位（1 bit）为1，那么这个字段存在，如果标志位为0，那么这个字段不存在。
-        byte[] maskingKey = null;
-        if (mask == 1) {
-            maskingKey = Arrays.copyOfRange(frame, off, (off + 4 * 8));
-            off += 4 * 8;
-        }
-        //“有效负载数据”是指“扩展数据”和“应用数据”。
-        byte[] payloadData = Arrays.copyOfRange(frame, off, (off + payloadLen * 8));
-        off += payloadLen * 8;
-        return WebsocketFrame.builder()
-                .fin(fin)
-                .rsv(rsv)
-                .opcode(opcode)
-                .mask(mask)
-                .payloadLen(payloadLenBinary)
-                .payloadLenExtended(payloadLenExtended)
-                .maskingKey(maskingKey)
-                .payloadData(payloadData);
-    }
 
 }

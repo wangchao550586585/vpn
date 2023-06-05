@@ -43,6 +43,14 @@ public class RequestHeaders {
     //表示客户端期望使用的协议级别的扩展
     private String secWebSocketExtensions;
 
+    public static RequestHeaders builder() {
+        return new RequestHeaders();
+    }
+
+    private RequestHeaders self() {
+        return this;
+    }
+
     public static RequestHeaders parse(CompositeByteBuf cumulation) {
         RequestHeaders requestHeaders = new RequestHeaders();
         while (cumulation.remaining() > 0) {
@@ -89,208 +97,234 @@ public class RequestHeaders {
         return accept;
     }
 
-    public void setAccept(String accept) {
+    public RequestHeaders accept(String accept) {
         this.accept = accept;
+        return self();
     }
 
     public String getAcceptEncoding() {
         return acceptEncoding;
     }
 
-    public void setAcceptEncoding(String acceptEncoding) {
+    public RequestHeaders acceptEncoding(String acceptEncoding) {
         this.acceptEncoding = acceptEncoding;
+        return self();
     }
 
     public String getAcceptLanguage() {
         return acceptLanguage;
     }
 
-    public void setAcceptLanguage(String acceptLanguage) {
+    public RequestHeaders acceptLanguage(String acceptLanguage) {
         this.acceptLanguage = acceptLanguage;
+        return self();
     }
 
     public String getConnection() {
         return connection;
     }
 
-    public void setConnection(String connection) {
+    public RequestHeaders connection(String connection) {
         this.connection = connection;
+        return self();
     }
 
     public String getHost() {
         return host;
     }
 
-    public void setHost(String host) {
+    public RequestHeaders host(String host) {
         this.host = host;
+        return self();
     }
 
     public String getCacheControl() {
         return cacheControl;
     }
 
-    public void setCacheControl(String cacheControl) {
+    public RequestHeaders cacheControl(String cacheControl) {
         this.cacheControl = cacheControl;
+        return self();
     }
 
     public String getUserAgent() {
         return userAgent;
     }
 
-    public void setUserAgent(String userAgent) {
+    public RequestHeaders userAgent(String userAgent) {
         this.userAgent = userAgent;
+        return self();
     }
 
     public Integer getContentLength() {
         return contentLength;
     }
 
-    public void setContentLength(Integer contentLength) {
+    public RequestHeaders contentLength(Integer contentLength) {
         this.contentLength = contentLength;
+        return self();
     }
 
     public String getContentType() {
         return contentType;
     }
 
-    public void setContentType(String contentType) {
+    public RequestHeaders contentType(String contentType) {
         this.contentType = contentType;
+        return self();
     }
 
     public String getUpgrade() {
         return upgrade;
     }
 
-    public void setUpgrade(String upgrade) {
+    public RequestHeaders upgrade(String upgrade) {
         this.upgrade = upgrade;
+        return self();
     }
 
     public String getSecWebSocketKey() {
         return secWebSocketKey;
     }
 
-    public void setSecWebSocketKey(String secWebSocketKey) {
+    public RequestHeaders secWebSocketKey(String secWebSocketKey) {
         this.secWebSocketKey = secWebSocketKey;
+        return self();
     }
 
     public Integer getSecWebSocketVersion() {
         return secWebSocketVersion;
     }
 
-    public void setSecWebSocketVersion(Integer secWebSocketVersion) {
+    public RequestHeaders secWebSocketVersion(Integer secWebSocketVersion) {
         this.secWebSocketVersion = secWebSocketVersion;
+        return self();
     }
 
     public String getSecWebSocketProtocol() {
         return secWebSocketProtocol;
     }
 
-    public void setSecWebSocketProtocol(String secWebSocketProtocol) {
+    public RequestHeaders secWebSocketProtocol(String secWebSocketProtocol) {
         this.secWebSocketProtocol = secWebSocketProtocol;
+        return self();
     }
 
     public String getOrigin() {
         return origin;
     }
 
-    public void setOrigin(String origin) {
+    public RequestHeaders origin(String origin) {
         this.origin = origin;
+        return self();
     }
 
     public String getSecWebSocketExtensions() {
         return secWebSocketExtensions;
     }
 
-    public void setSecWebSocketExtensions(String secWebSocketExtensions) {
+    public RequestHeaders secWebSocketExtensions(String secWebSocketExtensions) {
         this.secWebSocketExtensions = secWebSocketExtensions;
+        return self();
     }
 
     public String getSecchua() {
         return secchua;
     }
 
-    public void setSecchua(String secchua) {
+    public RequestHeaders secchua(String secchua) {
         this.secchua = secchua;
+        return self();
     }
 
     public String getSecchuamobile() {
         return secchuamobile;
     }
 
-    public void setSecchuamobile(String secchuamobile) {
+    public RequestHeaders secchuamobile(String secchuamobile) {
         this.secchuamobile = secchuamobile;
+        return self();
     }
 
     public String getSecchuaplatform() {
         return secchuaplatform;
     }
 
-    public void setSecchuaplatform(String secchuaplatform) {
+    public RequestHeaders secchuaplatform(String secchuaplatform) {
         this.secchuaplatform = secchuaplatform;
+        return self();
     }
 
-    public String getSecFetchSite() {
+    public String getsecFetchSite() {
         return secFetchSite;
     }
 
-    public void setSecFetchSite(String secFetchSite) {
+    public RequestHeaders secFetchSite(String secFetchSite) {
         this.secFetchSite = secFetchSite;
+        return self();
     }
 
     public String getSecFetchMode() {
         return secFetchMode;
     }
 
-    public void setSecFetchMode(String secFetchMode) {
+    public RequestHeaders secFetchMode(String secFetchMode) {
         this.secFetchMode = secFetchMode;
+        return self();
     }
 
     public String getSecFetchDest() {
         return secFetchDest;
     }
 
-    public void setSecFetchDest(String secFetchDest) {
+    public RequestHeaders secFetchDest(String secFetchDest) {
         this.secFetchDest = secFetchDest;
+        return self();
     }
 
     public String getReferer() {
         return referer;
     }
 
-    public void setReferer(String referer) {
+    public RequestHeaders referer(String referer) {
         this.referer = referer;
+        return self();
     }
 
     public String getSecFetchUser() {
         return secFetchUser;
     }
 
-    public void setSecFetchUser(String secFetchUser) {
+    public RequestHeaders secFetchUser(String secFetchUser) {
         this.secFetchUser = secFetchUser;
+        return self();
     }
 
     public String getUpgradeInsecureRequests() {
         return upgradeInsecureRequests;
     }
 
-    public void setUpgradeInsecureRequests(String upgradeInsecureRequests) {
+    public RequestHeaders upgradeInsecureRequests(String upgradeInsecureRequests) {
         this.upgradeInsecureRequests = upgradeInsecureRequests;
+        return self();
     }
 
     public String getProxyConnection() {
         return proxyConnection;
     }
 
-    public void setProxyConnection(String proxyConnection) {
+    public RequestHeaders proxyConnection(String proxyConnection) {
         this.proxyConnection = proxyConnection;
+        return self();
     }
 
     public String getProxyAuthorization() {
         return proxyAuthorization;
     }
 
-    public void setProxyAuthorization(String proxyAuthorization) {
+    public RequestHeaders proxyAuthorization(String proxyAuthorization) {
         this.proxyAuthorization = proxyAuthorization;
+        return self();
     }
 
     @Override

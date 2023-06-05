@@ -71,7 +71,7 @@ public final class Response {
             sb.append("Upgrade").append(": ").append(it).append("\r\n");
         });
         Optional.ofNullable(secWebSocketExtensions).ifPresent(it -> {
-            sb.append("Sec-WebSocket-Key").append(": ").append(it).append("\r\n");
+            sb.append("Sec-WebSocket-Extensions").append(": ").append(it).append("\r\n");
         });
         Optional.ofNullable(secWebSocketProtocol).ifPresent(it -> {
             sb.append("Sec-WebSocket-Protocol").append(": ").append(it).append("\r\n");
@@ -151,6 +151,58 @@ public final class Response {
     public Response secWebSocketAccept(String secWebSocketAccept) {
         this.secWebSocketAccept = secWebSocketAccept;
         return self();
+    }
+
+    public String getHttpVersion() {
+        return httpVersion;
+    }
+
+    public HttpStatus getHttpStatus() {
+        return httpStatus;
+    }
+
+    public String getDate() {
+        return date;
+    }
+
+    public String getConnection() {
+        return connection;
+    }
+
+    public String getContentLanguage() {
+        return contentLanguage;
+    }
+
+    public String getContentType() {
+        return contentType;
+    }
+
+    public Integer getContentLength() {
+        return contentLength;
+    }
+
+    public byte[] getPayload() {
+        return payload;
+    }
+
+    public FileChannel getStream() {
+        return stream;
+    }
+
+    public String getUpgrade() {
+        return upgrade;
+    }
+
+    public String getSecWebSocketExtensions() {
+        return secWebSocketExtensions;
+    }
+
+    public String getSecWebSocketProtocol() {
+        return secWebSocketProtocol;
+    }
+
+    public String getSecWebSocketAccept() {
+        return secWebSocketAccept;
     }
 
     public void write(SocketChannel channel, String uuid) throws IOException {

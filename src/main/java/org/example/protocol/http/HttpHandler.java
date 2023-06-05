@@ -160,11 +160,11 @@ public class HttpHandler extends AbstractHandler {
             //说明表单提交，可能存在附件
             if (requestLine.getContentType().contains("multipart/form-data")) {
                 List<Multipart> multiparts = Multipart.parse(cumulation, requestLine.getContentType());
-                request.setMultiparts(multiparts);
+                request.multiparts(multiparts);
                 LOGGER.debug("multiparts {} {}", multiparts, uuid);
             } else {
                 String payload = cumulation.read(contentLength);
-                request.setRequestBody(payload);
+                request.requestBody(payload);
                 LOGGER.debug("payloads {} {}", payload, uuid);
             }
         }
@@ -180,7 +180,7 @@ public class HttpHandler extends AbstractHandler {
         if (pre > 0) {
             String params = requestTarget.substring(pre + 1, requestTarget.length());
             Map<String, String> paramsMap = parseParams(params);
-            request.setParams(paramsMap);
+            request.params(paramsMap);
             LOGGER.debug("params {} {}", paramsMap, uuid);
         }
     }

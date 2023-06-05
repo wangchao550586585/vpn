@@ -1,4 +1,4 @@
-package org.example.protocol.dns;
+package org.example.protocol.dns.client;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

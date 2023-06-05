@@ -8,6 +8,9 @@ public class StartLine {
     private String requestTarget;
     private String httpVersion;
 
+    public StartLine() {
+    }
+
     public StartLine(String method, String requestTarget, String httpVersion) {
         this.method = method;
         this.requestTarget = requestTarget;
@@ -30,24 +33,27 @@ public class StartLine {
         return method;
     }
 
-    public void setMethod(String method) {
+    public StartLine method(String method) {
         this.method = method;
+        return self();
     }
 
     public String getRequestTarget() {
         return requestTarget;
     }
 
-    public void setRequestTarget(String requestTarget) {
+    public StartLine requestTarget(String requestTarget) {
         this.requestTarget = requestTarget;
+        return self();
     }
 
     public String getHttpVersion() {
         return httpVersion;
     }
 
-    public void setHttpVersion(String httpVersion) {
+    public StartLine httpVersion(String httpVersion) {
         this.httpVersion = httpVersion;
+        return self();
     }
 
     @Override
@@ -58,4 +64,14 @@ public class StartLine {
                 ", httpVersion='" + httpVersion + '\'' +
                 '}';
     }
+
+    public static StartLine builder() {
+        return new StartLine();
+    }
+
+    private StartLine self() {
+        return this;
+    }
+
+
 }

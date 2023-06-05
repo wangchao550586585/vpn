@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.example.util.Utils.copy;
