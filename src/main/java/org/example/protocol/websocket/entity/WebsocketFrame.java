@@ -52,7 +52,7 @@ public class WebsocketFrame {
     private final static byte DEFAULT_FIN = 0x01;
     private final static byte[] DEFAULT_RSV = {0x00, 0x00, 0x00};
     public final static byte DEFAULT_MASK = 0x00;
-    private final static byte DEFAULT_HAS_MASK = 0x01;
+    public final static byte DEFAULT_HAS_MASK = 0x01;
     private final static byte[] DEFAULT_PAYLOAD_LEN = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
     public static WebsocketFrame builder() {

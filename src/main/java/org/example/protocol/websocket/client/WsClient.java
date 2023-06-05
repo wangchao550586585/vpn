@@ -4,9 +4,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.example.entity.ChannelWrapped;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.*;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Set;
 
 public class WsClient implements Runnable {
@@ -75,6 +77,21 @@ public class WsClient implements Runnable {
         } catch (Exception exception) {
             LOGGER.error("remote select fail ", exception);
             throw new RuntimeException(exception);
+        }finally {
+            if (Objects.nonNull(remoteChannel)){
+                try {
+                    remoteSelector.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            if (Objects.nonNull(remoteSelector)){
+                try {
+                    remoteSelector.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
     }
 

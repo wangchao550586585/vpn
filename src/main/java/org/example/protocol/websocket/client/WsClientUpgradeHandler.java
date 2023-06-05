@@ -5,9 +5,10 @@ import org.example.entity.CompositeByteBuf;
 import org.example.protocol.AbstractHandler;
 import org.example.protocol.http.HttpStatus;
 import org.example.protocol.http.entity.*;
-import org.example.protocol.websocket.entity.WebsocketFrame;
 import org.example.util.Utils;
 import java.util.Objects;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class WsClientUpgradeHandler extends AbstractHandler {
     Request request;
@@ -56,7 +57,7 @@ public class WsClientUpgradeHandler extends AbstractHandler {
             closeChildChannel();
             return;
         }
-        if (Objects.nonNull(response.getSecWebSocketExtensions())){
+        if (Objects.nonNull(response.getSecWebSocketExtensions())) {
             if (!requestHeaders.getSecWebSocketExtensions().contains(response.getSecWebSocketExtensions())) {
                 //关闭客户端
                 closeChildChannel();
@@ -68,9 +69,11 @@ public class WsClientUpgradeHandler extends AbstractHandler {
             closeChildChannel();
             return;
         }
-        WebsocketFrame.clientSendUTF("hello",channelWrapped.channel(),uuid);
+        Heartbeat heartbeat = new Heartbeat(channelWrapped);
+        new ScheduledThreadPoolExecutor(1, r -> new Thread(r, "ping" + r.hashCode()))
+                .scheduleAtFixedRate(heartbeat, 1, 5, TimeUnit.SECONDS);
         //协议升级
-        WsSend websocketClientUpgrade = new WsSend(channelWrapped, request);
+        WsSend websocketClientUpgrade = new WsSend(channelWrapped, request, heartbeat);
         channelWrapped.key().attach(websocketClientUpgrade);
         //清除读取的数据
         channelWrapped.cumulation().clear();

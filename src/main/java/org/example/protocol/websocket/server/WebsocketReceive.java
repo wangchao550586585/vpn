@@ -143,6 +143,7 @@ public class WebsocketReceive extends AbstractHandler {
                 /**
                  * 如果收到了一个心跳Ping帧，那么终端必须发送一个心跳Pong 帧作为回应，除非已经收到了一个关闭帧。终端应该尽快回复Pong帧。
                  */
+                LOGGER.info("pong {} ",uuid);
                 WebsocketFrame.defaultFrame(WebsocketFrame.OpcodeEnum.PONG, DEFAULT_MASK, null, null, null, null, channelWrapped.channel(), channelWrapped.uuid());
                 break;
             default:
