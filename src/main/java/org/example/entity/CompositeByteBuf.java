@@ -32,9 +32,6 @@ public class CompositeByteBuf {
      */
     public void composite(ByteBuffer buffer) {
         //每次添加新的buffer时，判断上次是否读到边界处了
-        if (readIndex == buffers.size() - 1 && buffers.get(readIndex).remaining() <= 0) {
-            readIndex++;
-        }
         buffers.add(buffer);
     }
 
@@ -62,14 +59,13 @@ public class CompositeByteBuf {
         byte value = byteBuffer.get();
         //说明读到结尾处
         if (byteBuffer.remaining() <= 0) {
-            //不允许超过边界
-            readIndex = Math.min(readIndex + 1, buffers.size() - 1);
+            readIndex = Math.min(readIndex + 1, buffers.size());
         }
         return value;
     }
 
     public void clear() {
-        for (int i = 0; i < readIndex; i++) {
+        for (int i = readIndex - 1; i >= 0; i--) {
             buffers.remove(i);
         }
         lastReadIndex = readIndex = 0;
@@ -130,6 +126,14 @@ public class CompositeByteBuf {
         }
     }
 
+    public byte[] readByte(int length) {
+        byte[] bytes = new byte[length];
+        for (int i = 0; i < length; i++) {
+            bytes[i] = get();
+        }
+        return bytes;
+    }
+
     /**
      * 打印尚未读取的数据
      */
@@ -167,6 +171,15 @@ public class CompositeByteBuf {
     }
 
     /**
+     * 将所有byte转成字符串
+     *
+     * @return
+     */
+    public byte[] readAllByte() {
+        return readByte(remaining());
+    }
+
+    /**
      * 数据写入本地
      *
      * @param fileChannel
@@ -187,6 +200,7 @@ public class CompositeByteBuf {
         }
     }
 
+    // TODO: 2023/6/5
     public byte[] binaryString() {
         byte[] result = new byte[this.remaining() * 8];
         for (int i = readIndex; i < buffers.size(); i++) {

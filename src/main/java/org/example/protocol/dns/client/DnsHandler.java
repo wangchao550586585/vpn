@@ -229,7 +229,7 @@ public class DnsHandler {
                         //将len的第6~7位置0
                         len &= ~(1 << 7);
                         len &= ~(1 << 6);
-                        int index = len * 255 + offset;
+                        int index = len * 256 + offset;
                         sb.append(getCompressionString(originFrame, index * 8));
                         continue;
                     }

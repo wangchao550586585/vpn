@@ -3,6 +3,7 @@ package org.example.protocol.websocket.entity;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.example.entity.ChannelWrapped;
+import org.example.entity.CompositeByteBuf;
 import org.example.util.Pair;
 import org.example.util.Utils;
 
@@ -22,7 +23,7 @@ public class WebsocketFrame {
         //%x1 表示一个文本帧
         SEND_UTF(new byte[]{0x00, 0x00, 0x00, 0x01}),
         //%x2 表示一个二进制帧
-        SEND_Binary(new byte[]{0x00, 0x00, 0x01, 0x00}),
+        SEND_BINARY(new byte[]{0x00, 0x00, 0x01, 0x00}),
         //%x8 表示一个连接关闭包
         CLOSE(new byte[]{0x01, 0x00, 0x00, 0x00}),
         //%x9 表示一个ping包
@@ -62,13 +63,12 @@ public class WebsocketFrame {
     }
 
     /**
-     *
      * @param opcode
      * @param mask
      * @param payloadLen
      * @param payloadLenExtended
      * @param maskingKey
-     * @param payloadData 字节显示。
+     * @param payloadData        字节显示。
      * @param channel
      * @param uuid
      * @throws IOException
@@ -135,6 +135,37 @@ public class WebsocketFrame {
                 channel,
                 uuid);
     }
+
+    public static void write(byte[] cmdByte, byte[] seqIdByte, byte[] bytes, String uuid, SocketChannel remoteChannel) throws IOException {
+        //存储字节长度
+        byte[] payload = new byte[cmdByte.length + seqIdByte.length + bytes.length + 2];
+        int off = 0;
+        payload[off++] = (byte) cmdByte.length;
+        off = Utils.copy(off, payload, cmdByte);
+        payload[off++] = (byte) seqIdByte.length;
+        off = Utils.copy(off, payload, seqIdByte);
+        off = Utils.copy(off, payload, bytes);
+        WebsocketFrame.clientSendByte(payload, remoteChannel, uuid);
+    }
+
+    public static void clientSendByte(byte[] payloadData, SocketChannel channel, String uuid) throws IOException {
+        //构建长度
+        Pair<byte[], byte[]> pair = getLength(payloadData.length);
+        //4字节
+        byte[] maskingKey = Utils.buildMask();
+        payloadData = Utils.mask(payloadData, maskingKey);
+
+        //“负载字段”是用UTF-8编码的文本数据。
+        WebsocketFrame.defaultFrame(WebsocketFrame.OpcodeEnum.SEND_BINARY,
+                DEFAULT_HAS_MASK,
+                pair.getFirst(),
+                pair.getSecond(),
+                maskingKey,
+                payloadData,
+                channel,
+                uuid);
+    }
+
     /**
      * 获取长度和扩展字段
      *
@@ -163,7 +194,16 @@ public class WebsocketFrame {
     }
 
     public static WebsocketFrame parse(ChannelWrapped channelWrapped) {
-        byte[] frame = channelWrapped.cumulation().binaryString();
+        //打印
+        //byte[] frame = channelWrapped.cumulation().binaryString();
+        byte[] frame = getResult(channelWrapped.cumulation());
+        if (frame==null){
+            return null;
+        }
+        if (frame[0] != 1) {
+            LOGGER.error("not 1");
+            return null;
+        }
         String s = Utils.buildBinaryReadable(frame);
         LOGGER.info("receive frame {} {}", s, channelWrapped.uuid());
         //表示这是消息的最后一个片段。第一个片段也有可能是最后一个片段。
@@ -175,6 +215,7 @@ public class WebsocketFrame {
         off += 3;
         for (int i = 0; i < rsv.length; i++) {
             if (rsv[i] != 0x00) {
+                LOGGER.info("rsv 前面三位必须为0");
                 return null;
             }
         }
@@ -233,6 +274,93 @@ public class WebsocketFrame {
                 .payloadData(payloadData);
     }
 
+    private static byte[] getResult(CompositeByteBuf cumulation) {
+        //可读数量
+        int remaining = cumulation.remaining();
+        cumulation.mark();
+        if (remaining < 2) {
+            LOGGER.warn("最少要2位数据包不完整 {} ",remaining);
+            cumulation.reset();
+            return null;
+        }
+        //1bit fin,3bit rsv,4bit opencode
+        int off = 0;
+        byte b = cumulation.get();
+        off++;
+        //1bit mask,7bit payload
+        byte b1 = cumulation.get();
+        off++;
+        byte[] byte1 = Utils.bytes2Binary(b1);
+        byte[] payloadLenByte = Arrays.copyOfRange(byte1, 1, byte1.length);
+        int payloadLen = Utils.binary2Int(payloadLenByte);
+        byte[] extendedPlay = null;
+        int finalLen = payloadLen;
+
+        if (payloadLen < 126) {
+        } else if (payloadLen >= 126 && payloadLen <= 65535) {
+            if (remaining < off+2) {
+                cumulation.reset();
+                LOGGER.warn("extendedPlay 数据包不完整");
+                return null;
+            }
+            //如果是126，那么接下来的2个bytes解释为16bit的无符号整形作为负载数据的长度。
+            //字节长度量以网络字节顺序表示
+            extendedPlay = new byte[]{cumulation.get(), cumulation.get()};
+            off += 2;
+            finalLen = Utils.byteToIntV2(extendedPlay[0]) * 256 + Utils.byteToIntV2(extendedPlay[1]);
+        } else {
+            //如果是127，那么接下来的8个bytes解释为一个64bit的无符号整形（最高位的bit必须为0）作为负载数据的长度。
+            // TODO: 2023/6/1 超过65535太长了，用不着
+        }
+        //maskkey
+        byte[] maskKey = null;
+        if (byte1[0] == 0x01) {
+            //maskkey
+            if (remaining < off+4) {
+                cumulation.reset();
+                LOGGER.info("mask 位数不够");
+                return null;
+            }
+            maskKey = new byte[]{cumulation.get(), cumulation.get(), cumulation.get(), cumulation.get()};
+            off += 4;
+        }
+
+        if (remaining < off+finalLen) {
+            cumulation.reset();
+            LOGGER.warn("payloadLen 不够");
+            return null;
+        }
+
+        byte[] data = null;
+        if (finalLen > 0) {
+            data = new byte[finalLen];
+            for (int i = 0; i < finalLen; i++) {
+                data[i] = cumulation.get();
+            }
+            off += finalLen;
+        }
+        byte[] fra = new byte[off];
+        off = 0;
+        fra[off++] = b;
+        fra[off++] = b1;
+        if (Objects.nonNull(extendedPlay)) {
+            off = copy(off, fra, extendedPlay);
+        }
+        if (Objects.nonNull(maskKey)) {
+            off = copy(off, fra, maskKey);
+        }
+        if (Objects.nonNull(data)) {
+            off = copy(off, fra, data);
+        }
+        //fra转成binnary
+        byte[] result = new byte[off * 8];
+        for (int i = 0; i < off; i++) {
+            byte[] dest = Utils.bytes2Binary(fra[i]);
+            System.arraycopy(dest, 0, result, i * 8, dest.length);
+        }
+        return result;
+    }
+
     public byte[] build() {
         int off = 0;
         byte[] bytes = new byte[length];
@@ -244,17 +372,17 @@ public class WebsocketFrame {
         if (Objects.nonNull(payloadLenExtended)) {
             off = copy(off, bytes, payloadLenExtended);
         }
-        off=length/8;
+        off = length / 8;
         if (Objects.nonNull(maskingKey)) {
-            off+=maskingKey.length;
+            off += maskingKey.length;
         }
         if (Objects.nonNull(payloadData)) {
-            off+=payloadData.length;
+            off += payloadData.length;
         }
         byte[] result = new byte[off];
-        Utils.binary2Bytes(bytes,result);
+        Utils.binary2Bytes(bytes, result);
 
-        off=length/8;
+        off = length / 8;
         if (Objects.nonNull(maskingKey)) {
             off = copy(off, result, maskingKey);
         }
@@ -359,9 +487,9 @@ public class WebsocketFrame {
 
     public void write(SocketChannel channel, String uuid) throws IOException {
         byte[] response = build();
+        LOGGER.info("send frame {} {} ", Arrays.toString(Utils.bytes2Binary(response)), uuid);
         ByteBuffer byteBuffer = ByteBuffer.wrap(response);
         channel.write(byteBuffer);
-        LOGGER.info(" response frame {} {} ", this.toString(), uuid);
     }
 
     @Override

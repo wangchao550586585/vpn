@@ -63,7 +63,7 @@ public class WsSend extends AbstractHandler {
                 break;
         }
         //读取结束则清除本次读取数据
-        channelWrapped.cumulation().clearAll();
+        channelWrapped.cumulation().clear();
     }
 
     @Override
