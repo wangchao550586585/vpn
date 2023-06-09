@@ -22,7 +22,7 @@ public class App {
     private void vpnStart() {
         try {
             ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
-            serverSocketChannel.socket().bind(new InetSocketAddress(8070));
+            serverSocketChannel.socket().bind(new InetSocketAddress(8060));
             LOGGER.info("MasterReactor bind success");
             serverSocketChannel.configureBlocking(false);
             Selector masterReactor = Selector.open();

@@ -6,7 +6,7 @@
     <script type="text/javascript">
         var ws;
         function WebSocketTest() {
-            ws = new WebSocket("ws://127.0.0.1:8070/echo?name=哈哈&value=1111");
+            ws = new WebSocket("ws://127.0.0.1:8080/echo?name=哈哈&value=1111");
             // 打开一个 web socket
             ws.onopen = function () {
                 print("连接成功");

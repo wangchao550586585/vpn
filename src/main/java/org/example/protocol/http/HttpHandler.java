@@ -196,7 +196,9 @@ public class HttpHandler extends AbstractHandler {
         String[] split = params.split("&");
         for (int i = 0; i < split.length; i++) {
             String[] keyVal = split[i].split("=");
-            paramsMap.put(keyVal[0], keyVal[1]);
+            if (keyVal.length > 1) {//处理有的key没有value
+                paramsMap.put(keyVal[0], keyVal[1]);
+            }
         }
         return paramsMap;
     }

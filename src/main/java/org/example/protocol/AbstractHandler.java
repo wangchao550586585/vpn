@@ -27,7 +27,9 @@ public abstract class AbstractHandler implements Runnable {
             throw new RuntimeException(e);
         }
     }
-
+    public ChannelWrapped getChannelWrapped() {
+        return channelWrapped;
+    }
     public void after() {
     }
 
