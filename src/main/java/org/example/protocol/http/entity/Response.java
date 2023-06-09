@@ -2,11 +2,9 @@ package org.example.protocol.http.entity;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.example.protocol.http.HttpStatus;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channel;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
 import java.text.DateFormat;

@@ -3,7 +3,7 @@ package org.example.protocol.websocket.client;
 import org.example.entity.ChannelWrapped;
 import org.example.entity.CompositeByteBuf;
 import org.example.protocol.AbstractHandler;
-import org.example.protocol.http.HttpStatus;
+import org.example.protocol.http.entity.HttpStatus;
 import org.example.protocol.http.entity.*;
 import org.example.util.Utils;
 import java.util.Objects;

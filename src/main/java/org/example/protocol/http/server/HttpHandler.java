@@ -1,9 +1,10 @@
-package org.example.protocol.http;
+package org.example.protocol.http.server;
 
 import org.example.RemoteConnect;
 import org.example.entity.CompositeByteBuf;
 import org.example.entity.ChannelWrapped;
 import org.example.protocol.AbstractHandler;
+import org.example.protocol.http.entity.HttpStatus;
 import org.example.protocol.http.entity.*;
 import org.example.protocol.socks5.DeliverHandler;
 import org.example.protocol.socks5.entity.Resource;
@@ -51,6 +52,12 @@ import java.util.*;
  * https://duoani.github.io/HTTP-RFCs.zh-cn/
  * https://github.com/abbshr/rfc7540-translation-zh_cn/tree/master
  * http://blog.zhaojie.me/2011/03/html-form-file-uploading-programming.html
+ *
+ * 隧道代理实现
+ * https://www.cnblogs.com/cangqinglang/p/15963012.html
+ * https://zhuanlan.zhihu.com/p/467631546
+ * https://lilywei739.github.io/2017/01/25/principle_for_http_https.html
+ * https://imququ.com/post/web-proxy.html
  */
 public class HttpHandler extends AbstractHandler {
     private final static String BASE_DIR = "./src/main/resources/images/";

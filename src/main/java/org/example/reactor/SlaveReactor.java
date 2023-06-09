@@ -4,9 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.example.entity.ChannelWrapped;
 import org.example.protocol.AbstractHandler;
-import org.example.protocol.http.HttpHandler;
-import org.example.protocol.socks5.AuthHandler;
-import org.example.protocol.websocket.server.WebsocketHandler;
+import org.example.protocol.http.server.HttpHandler;
 import org.example.util.UnsafeHelper;
 import org.example.util.Utils;
 import org.jctools.queues.atomic.MpscChunkedAtomicArrayQueue;
@@ -183,8 +181,9 @@ public class SlaveReactor implements Runnable {
     private void processIOOptimized() {
         for (int i = 0; i < selectedKeys.size; i++) {
             SelectionKey key = selectedKeys.keys[i];
+            AbstractHandler handler = (AbstractHandler) key.attachment();
             selectedKeys.keys[i] = null;
-            handler(key);
+            handler(key,handler);
         }
     }
 
@@ -193,23 +192,30 @@ public class SlaveReactor implements Runnable {
         Iterator<SelectionKey> iterator = selectionKeys.iterator();
         while (iterator.hasNext()) {
             SelectionKey key = iterator.next();
+            AbstractHandler handler = (AbstractHandler) key.attachment();
             iterator.remove();
-            handler(key);
+            handler(key,handler);
         }
     }
 
-    private void handler(SelectionKey key) {
+    private void handler(SelectionKey key,AbstractHandler handler) {
         //主动调用cancel，close chanle，close selector会key失效
         if (!key.isValid()) {
-            AbstractHandler handler = (AbstractHandler) key.attachment();
             String uuid = handler.uuid();
             LOGGER.error("key was invalid {}", uuid);
             handler.closeChildChannel();//这里会取消key
             return;
         }
-        if (key.isReadable()) {
-            Runnable runnable = (Runnable) key.attachment();
-            runnable.run();
+        try {
+            int readyOps = key.readyOps();
+            if ((readyOps & SelectionKey.OP_READ) != 0) {
+                handler.run();
+            }
+            if ((readyOps & SelectionKey.OP_WRITE) != 0) {
+                // TODO: 2023/6/9
+            }
+        } catch (CancelledKeyException ignored) {
+            handler.closeChildChannel();
         }
     }
 

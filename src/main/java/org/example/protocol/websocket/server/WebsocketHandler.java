@@ -1,8 +1,8 @@
 package org.example.protocol.websocket.server;
 
 import org.example.entity.ChannelWrapped;
-import org.example.protocol.http.HttpHandler;
-import org.example.protocol.http.HttpStatus;
+import org.example.protocol.http.server.HttpHandler;
+import org.example.protocol.http.entity.HttpStatus;
 import org.example.protocol.http.entity.Request;
 import org.example.protocol.http.entity.Response;
 import org.example.util.Utils;

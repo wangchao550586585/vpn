@@ -1,4 +1,4 @@
-package org.example.protocol.http;
+package org.example.protocol.http.entity;
 
 import java.util.Arrays;
 
