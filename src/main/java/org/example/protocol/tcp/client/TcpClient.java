@@ -33,9 +33,47 @@ public class TcpClient implements Runnable {
         while (true) {
             String line = s.nextLine();
             if (line.equals("ok")) {
+                //执行结束
+                doClose();
                 break;
             }
             doWrite(line);
+        }
+    }
+
+    private void doClose() {
+        TcpFrameProto.TcpFrame tcpFrame = TcpFrameProto.TcpFrame.newBuilder()
+                .setSourcePort(tcb.SourcePort())
+                //目标端口8090
+                .setDestinationPort(tcb.DestinationPort())
+                //如果上一次发送的报文是 SYN 报文或者 FIN 报文，则改为 + 1
+                //seq=lastSeq+1
+                .setSequenceNumber(tcb.SND_NXT())
+                //如果收到的是 SYN 报文或者 FIN 报文，则改为 + 1
+                //ack=server-seq+1
+                .setAcknowledgmentNumber(tcb.RCV_NXT())
+                //结束
+                .setFIN(1)
+                //表示确认接收到数据
+                .setACK(1)
+                .build();
+        try {
+            LOGGER.info("send {}", tcpFrame.toString());
+            tcb
+                    //更新发送但尚确认的
+                    .SND_UNA(tcb.SND_NXT())
+                    //下一次序列号为初始序号+data.length
+                    .SND_NXT(tcb.SND_NXT() + 1)
+                    //发送窗口
+                    .SND_WND(65535)
+                    //接收窗口
+                    .RCV_WND(65535)
+                    //连接已经建立，用户进程可以收发数据。
+                    .TcpStatus(TcpStatus.FIN_WAIT_1);
+            LOGGER.info("update {}", tcb.toString());
+            remoteChannel.write(ByteBuffer.wrap(tcpFrame.toByteArray()));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
