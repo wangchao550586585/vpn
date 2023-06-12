@@ -47,16 +47,31 @@ public class TcpClientReceive extends AbstractHandler {
                 tcb
                         //更新发送但尚确认的
                         .SND_UNA(tcb.SND_NXT())
-                        //syn下一次序列号为初始序号+1
-                        .SND_NXT(tcb.SND_NXT()+1)
+                        //因为协议升级成功，可以省略这个了
+                        //.SND_NXT(tcb.SND_NXT()+1)
                         //发送窗口
                         .SND_WND(65535)
-                        //下次期望被接收的序列号
+                        //因为协议升级成功，可以省略这个了
                         .RCV_NXT(rcv_next)
                         //接收窗口
                         .RCV_WND(65535)
                         //连接已经建立，用户进程可以收发数据。
                         .TcpStatus(TcpStatus.ESTABLISHED);
+                LOGGER.info("update {}", tcb.toString());
+            }
+        } else if (receive.getACK() == 1) {
+            if (receive.getSequenceNumber() == tcb.RCV_NXT()
+                    && receive.getAcknowledgmentNumber() == tcb.SND_NXT()) {
+                //非fin，所以等于字符长度+seq
+                int rcv_nxt = receive.getSequenceNumber() + receive.getData().size();
+                //发送完SYN标志位之后，等待对方发送ACK标志
+                tcb
+                        //更新发送但尚确认的
+                        .SND_UNA(tcb.SND_NXT())
+                        //发送窗口
+                        .SND_WND(65535)
+                        .RCV_NXT(rcv_nxt)
+                        .RCV_WND(65535);
                 LOGGER.info("update {}", tcb.toString());
             }
         }

@@ -46,5 +46,5 @@ message TcpFrame {
   optional int32 UrgentPointer = 15;
   optional int32 Options = 16;
   optional int32 Padding = 17;
-  repeated bytes data = 18;
+  optional bytes data = 18;
 }

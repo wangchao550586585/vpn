@@ -68,6 +68,7 @@ public class TcpServer extends AbstractHandler {
                     .setSYN(1)
                     .build();
             channelWrapped.channel().write(ByteBuffer.wrap(tcpFrame.toByteArray()));
+            LOGGER.info("send {}", tcpFrame.toString());
             tcb
                     //更新发送但尚确认的
                     .SND_UNA(tcb.IRS())
@@ -81,14 +82,52 @@ public class TcpServer extends AbstractHandler {
                     //等待接收之前发送的syn的ack。
                     .TcpStatus(TcpStatus.SYN_RECEIVED);
             LOGGER.info("update {}", tcb.toString());
-            LOGGER.info("send {}", tcpFrame.toString());
-        } else if (receive.getACK() == 1) {
+        }  else if (receive.getACK() == 1 && receive.getPSH() == 1) {
+            //说明了推送了数据
             if (receive.getSequenceNumber() == tcb.RCV_NXT()
                     && receive.getAcknowledgmentNumber() == tcb.SND_NXT()) {
+                if (tcb.TcpStatus()==TcpStatus.SYN_RECEIVED){
+                    //等待接收之前发送的syn的ack。
+                    tcb.TcpStatus(TcpStatus.ESTABLISHED);
+                }
 
+                //非fin，所以等于字符长度+seq
+                int rcv_nxt = receive.getSequenceNumber() + receive.getData().size();
+                TcpFrameProto.TcpFrame tcpFrame = TcpFrameProto.TcpFrame.newBuilder()
+                        .setSourcePort(tcb.SourcePort())
+                        .setDestinationPort(receive.getSourcePort())
+                        //回复seqid
+                        .setSequenceNumber(tcb.SND_NXT())
+                        //如果上一次发送的报文是 SYN 报文或者 FIN 报文，则改为 + 1
+                        //ack=client-seq+1
+                        .setAcknowledgmentNumber(rcv_nxt)
+                        //表示确认接收到数据
+                        .setACK(1)
+                        .build();
+                channelWrapped.channel().write(ByteBuffer.wrap(tcpFrame.toByteArray()));
+                LOGGER.info("send {}", tcpFrame.toString());
+                tcb
+                        //更新发送但尚确认的
+                        .SND_UNA(tcb.SND_NXT())
+                        //下一次序列号为序号+1
+                        //还是和第三次握手的 ACK 报文的确认号一样，这是因为客户端三次握手之后，发送 TCP 数据报文 之前，
+                        //如果没有收到服务端的 TCP 数据报文，确认号还是延用上一次的，其实根据公式 2 你也能得到这个结论。
+                        //.SND_NXT(tcb.SND_NXT() + 1)
+                        //发送窗口
+                        .SND_WND(65535)
+                        //期待下次接收序列号
+                        .RCV_NXT(rcv_nxt)
+                        .RCV_WND(65535);
+                LOGGER.info("update {}", tcb.toString());
+            }
+
+        }else if (receive.getACK() == 1) {
+            //说明三次握手成功
+            if (receive.getSequenceNumber() == tcb.RCV_NXT()
+                    && receive.getAcknowledgmentNumber() == tcb.SND_NXT()) {
                 //等待接收之前发送的syn的ack。
                 tcb.TcpStatus(TcpStatus.ESTABLISHED);
-                LOGGER.info("update {}", tcb.toString());
+                LOGGER.info("handshark success update {}", tcb.toString());
             }
         }
 
