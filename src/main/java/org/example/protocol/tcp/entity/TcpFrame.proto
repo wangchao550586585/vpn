@@ -1,0 +1,50 @@
+syntax = "proto3";
+package jet.protobuf; // 包名，其他 proto 在引用此 proto 的时候，就可以使用 test.protobuf.PersonTest 来使用，
+// 注意：和下面的 java_package 是两种易混淆概念，同时定义的时候，java_package 具有较高的优先级
+
+option java_package = "org.example.protocol.tcp.entity"; // 生成类的包名，注意：会在指定路径下按照该包名的定义来生成文件夹
+option java_outer_classname = "TcpFrameProto"; // 生成类的类名，注意：下划线的命名会在编译的时候被自动改为驼峰命名
+/**
+ *     0                   1                   2                   3
+ *     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ *    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *    |          Source Port          |       Destination Port        |
+ *    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *    |                        Sequence Number                        |
+ *    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *    |                    Acknowledgment Number                      |
+ *    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *    |  Data |           |U|A|P|R|S|F|                               |
+ *    | Offset| Reserved  |R|C|S|S|Y|I|            Window             |
+ *    |       |           |G|K|H|T|N|N|                               |
+ *    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *    |           Checksum            |         Urgent Pointer        |
+ *    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *    |                    Options                    |    Padding    |
+ *    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *    |                             data                              |
+ *    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *
+ *                             TCP Header Format
+ */
+message TcpFrame {
+  //指定字段类型
+  optional int32 SourcePort = 1;
+  optional int32 DestinationPort = 2;
+  optional int32 SequenceNumber = 3;
+  optional int32 AcknowledgmentNumber = 4;
+  optional int32 dataOffset = 5;
+  optional int32 Reserved = 6;
+  optional int32 URG = 7;
+  optional int32 ACK = 8;
+  optional int32 PSH = 9;
+  optional int32 RST = 10;
+  optional int32 SYN = 11;
+  optional int32 FIN = 12;
+  optional int32 Window = 13;
+  optional int32 Checksum = 14;
+  optional int32 UrgentPointer = 15;
+  optional int32 Options = 16;
+  optional int32 Padding = 17;
+  repeated bytes data = 18;
+}

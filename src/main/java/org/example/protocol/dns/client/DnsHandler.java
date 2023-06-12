@@ -37,7 +37,6 @@ public class DnsHandler {
 
 
     public static void main(String[] args) throws Exception {
-        List<String> cname = new ArrayList<>();
         new DnsHandler().exec("www.biying.com");
     }
 
